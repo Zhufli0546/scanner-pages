@@ -79,20 +79,38 @@
     }
     #sortDirBtn:hover{ background:#1f2937; }
 
-    /* 手機端：顯示模式切換（卡片 / 表格） */
-    .view-toggle{
-      padding:7px 12px;
-      border-radius:999px;
+    /* 手機端：顯示模式切換（卡片 / 表格）- Segmented */
+    .segmented{
+      display:none; /* 桌機/平板預設不顯示 */
       border:1px solid #4b5563;
-      background:#111827;
+      background:#0b1220;
+      border-radius:999px;
+      overflow:hidden;
+      box-shadow:0 0 14px rgba(0,0,0,.25);
+    }
+    .seg-btn{
+      appearance:none;
+      border:0;
+      padding:7px 14px;
+      background:transparent;
       color:#e5e7eb;
       cursor:pointer;
-      display:none; /* 預設不顯示（桌機/平板） */
+      font-weight:1000;
+      letter-spacing:.2px;
+      display:inline-flex;
       align-items:center;
-      gap:6px;
-      font-weight:900;
+      justify-content:center;
+      min-width:74px;
+      transition: .18s ease;
     }
-    .view-toggle:hover{ background:#1f2937; }
+    .seg-btn:hover{
+      background: rgba(31,41,55,.65);
+    }
+    .seg-btn.active{
+      background: linear-gradient(90deg, rgba(59,130,246,.35), rgba(59,130,246,.75), rgba(59,130,246,.35));
+      color:#0b1220;
+      text-shadow: none;
+    }
 
     .summary{ font-size:12px; color:#9ca3af; }
 
@@ -400,19 +418,8 @@
         width:100%;
         justify-content:center;
       }
-
-      /* 手機只保留重要欄位（代號、名稱、股價、量、MPI、漲跌%、新聞） */
-      .table-wrap table{ min-width: 720px; }
-
-      table th:nth-child(4),  table td:nth-child(4),
-      table th:nth-child(5),  table td:nth-child(5),
-      table th:nth-child(6),  table td:nth-child(6),
-      table th:nth-child(7),  table td:nth-child(7),
-      table th:nth-child(11), table td:nth-child(11),
-      table th:nth-child(12), table td:nth-child(12),
-      table th:nth-child(13), table td:nth-child(13){
-        display:none;
-      }
+      /* 手機：表格保留所有欄位（可左右滑） */
+      .table-wrap table{ min-width: 980px; }
 
       th, td{
         padding: 8px 6px;
@@ -527,7 +534,7 @@
     /* Phone：預設卡片，可切換表格（左右滑） */
     @media (max-width: 720px){
       /* 顯示切換鈕 */
-      .view-toggle{ display:inline-flex; }
+      .segmented{ display:inline-flex; }
 
       /* 兩種模式（預設：mobile-view-cards） */
       body.mobile-view-cards .table-wrap{ display:none; }
@@ -578,7 +585,10 @@
 
     <button id="sortDirBtn">排序方向：<span id="sortDirLabel">降冪 ⬇</span></button>
     <div class="summary"><span id="countInfo"></span></div>
-    <button id="viewToggleBtn" class="view-toggle" type="button" title="手機端切換：卡片/表格">顯示：<span id="viewToggleLabel">卡片</span> 🔁</button>
+    <div class="segmented" id="viewSegment" role="tablist" aria-label="手機顯示模式切換">
+      <button id="viewCardsBtn" class="seg-btn" type="button" role="tab" aria-selected="true">卡片</button>
+      <button id="viewTableBtn" class="seg-btn" type="button" role="tab" aria-selected="false">表格</button>
+    </div>
 
   
 
@@ -600,7 +610,7 @@
     <thead>
       <tr>
         <th>代號（點 → Goodinfo）</th>
-        <th>名稱（點 → 玩股）</th>
+        <th>名稱（點 → 玩股網）</th>
         <th>股價</th>
         <th>開盤</th>
         <th>最高</th>
@@ -1112,7 +1122,7 @@
               ${hasNews && newsSample ? `<a href="${newsSample}" target="_blank">最新一則</a>` : ""}
               <a href="${norway}" target="_blank">大股東</a>
               <a href="${goodinfo}" target="_blank">Goodinfo</a>
-              <a href="${wantgoo}" target="_blank">玩股</a>
+              <a href="${wantgoo}" target="_blank">玩股網</a>
             </div>
           </div>
         `;
@@ -1203,19 +1213,36 @@
     });
 
 
-    function updateViewToggleLabel(){
-      const labelEl = document.getElementById("viewToggleLabel");
-      if (!labelEl) return;
+    function setMobileViewMode(mode){
+      // mode: "cards" | "table"
+      if (mode === "table"){
+        document.body.classList.add("mobile-view-table");
+        document.body.classList.remove("mobile-view-cards");
+        localStorage.setItem("mobileViewMode", "table");
+      } else {
+        document.body.classList.add("mobile-view-cards");
+        document.body.classList.remove("mobile-view-table");
+        localStorage.setItem("mobileViewMode", "cards");
+      }
+      updateSegmentActive();
+      applySearchFilter();
+    }
+
+    function updateSegmentActive(){
+      const btnCards = document.getElementById("viewCardsBtn");
+      const btnTable = document.getElementById("viewTableBtn");
+      if (!btnCards || !btnTable) return;
       const useTable = document.body.classList.contains("mobile-view-table");
-      labelEl.textContent = useTable ? "表格" : "卡片";
+      btnCards.classList.toggle("active", !useTable);
+      btnTable.classList.toggle("active", useTable);
+      btnCards.setAttribute("aria-selected", useTable ? "false" : "true");
+      btnTable.setAttribute("aria-selected", useTable ? "true" : "false");
     }
 
     function initMobileViewToggle(){
       const isPhone = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
-      const btn = document.getElementById("viewToggleBtn");
-      if (!btn) return;
 
-      // 桌機/平板：不需要切換（CSS 也會隱藏按鈕）
+      // 桌機/平板：不使用手機模式 class（桌機就顯示表格）
       if (!isPhone){
         document.body.classList.remove("mobile-view-cards","mobile-view-table");
         return;
@@ -1223,29 +1250,13 @@
 
       // 手機：預設卡片；若有記錄則沿用
       const saved = (localStorage.getItem("mobileViewMode") || "").toLowerCase();
-      if (saved === "table"){
-        document.body.classList.add("mobile-view-table");
-        document.body.classList.remove("mobile-view-cards");
-      } else {
-        document.body.classList.add("mobile-view-cards");
-        document.body.classList.remove("mobile-view-table");
-      }
-      updateViewToggleLabel();
+      const mode = (saved === "table") ? "table" : "cards";
+      setMobileViewMode(mode);
 
-      btn.addEventListener("click", () => {
-        const useTable = document.body.classList.contains("mobile-view-table");
-        if (useTable){
-          document.body.classList.remove("mobile-view-table");
-          document.body.classList.add("mobile-view-cards");
-          localStorage.setItem("mobileViewMode", "cards");
-        } else {
-          document.body.classList.add("mobile-view-table");
-          document.body.classList.remove("mobile-view-cards");
-          localStorage.setItem("mobileViewMode", "table");
-        }
-        updateViewToggleLabel();
-        applySearchFilter(); // 讓「目前顯示」依模式更新
-      });
+      const btnCards = document.getElementById("viewCardsBtn");
+      const btnTable = document.getElementById("viewTableBtn");
+      if (btnCards) btnCards.addEventListener("click", () => setMobileViewMode("cards"));
+      if (btnTable) btnTable.addEventListener("click", () => setMobileViewMode("table"));
     }
 
     initMobileViewToggle();
