@@ -20,6 +20,29 @@
       padding: 16px 25px;
     }
 
+
+    /* =======================
+       Sticky Logo Header
+       - 只固定最上層 Logo 區塊（header）
+       ======================= */
+    :root{ --header-h: 0px; }
+
+    body{
+      /* header 固定後，避免內容被蓋住（由 JS 計算 header 高度） */
+      padding-top: calc(16px + var(--header-h, 0px));
+    }
+    .header{
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 800;
+      background: #0d1117;
+      padding: 10px 25px 8px;
+      margin-bottom: 0;
+      box-shadow: 0 8px 18px rgba(0,0,0,.28);
+    }
+
     /* Header：置中 Logo */
     .header{
       display:flex;
@@ -30,7 +53,7 @@
       margin-bottom:10px;
     }
     .header-logo{
-      width:240px;
+      width:96px;
       max-width:70vw;
       height:auto;
       display:block;
@@ -198,7 +221,21 @@
     }
     tr:hover{ background:rgba(59,130,246,.15); }
 
-    .tag{
+    
+
+
+    .disclaimer{
+      margin-top: 18px;
+      color:#9ca3af;
+      font-size:12px;
+      line-height:1.6;
+      padding: 12px 12px;
+      border: 1px solid rgba(148,163,184,.16);
+      background: rgba(17,24,39,.55);
+      border-radius: 12px;
+    }
+
+.tag{
       background:#3b82f6;
       padding:3px 8px;
       color:white;
@@ -444,16 +481,17 @@
         width:100%;
         min-width: 0;
         box-sizing:border-box;
-      /* 手機：排序箭頭再大一點 */
-      .sort-anim{ font-size: 18px; }
-
       }
 
       #sortDirBtn{
         width:100%;
         justify-content:center;
       }
-      /* 手機：表格保留所有欄位（可左右滑） */
+      
+
+      /* 手機：排序箭頭再大一點 */
+      .sort-anim{ font-size: 18px; }
+/* 手機：表格保留所有欄位（可左右滑） */
       .table-wrap table{ min-width: 980px; }
 
       th, td{
@@ -461,7 +499,7 @@
         font-size: 12px;
       }
 
-      .header-logo{ width: 210px; }
+      .header-logo{ width: 84px; }
     }
 
   
@@ -585,7 +623,7 @@
 
 <body>
   <div class="header">
-    <img class="header-logo" src="logo.png" alt="SCAN logo" />
+    <img class="header-logo" id="logoBtn" src="logo.png" alt="SCAN logo" />
     <div class="subtitle" id="summaryText">讀取中…</div>
   </div>
 
@@ -645,8 +683,8 @@
     <table>
     <thead>
       <tr>
-        <th>代號（點 → Goodinfo）</th>
-        <th>名稱（點 → 玩股網）</th>
+        <th>股票代號</th>
+        <th>名稱</th>
         <th>股價</th>
         <th>開盤</th>
         <th>最高</th>
@@ -667,10 +705,54 @@
     </table>
   </div>
 
+  <div class="disclaimer">資訊來源：臺灣證券交易所 TWSE、財團法人中華民國證券櫃檯買賣中心 GTSM。使用者須遵守台灣證券交易所「交易資訊使用管理辦法」等交易資訊管理相關規定，所有資訊以台灣證券交易所公告資料為主。本網站提供之資料僅供參考，對資訊正確、延遲或傳輸中斷不負任何責任，如使用者依本資料交易發生損失需自行負責</div>
+
   <script>
     let allRows = [];
 
-    // ---------- helpers ----------
+    
+
+    // ---------- Sticky header height ----------
+    function applyHeaderHeight(){
+      const header = document.querySelector(".header");
+      if (!header) return;
+      const hh = Math.ceil(header.getBoundingClientRect().height);
+      document.documentElement.style.setProperty("--header-h", `${hh}px`);
+    }
+    window.addEventListener("resize", applyHeaderHeight);
+
+    // ---------- Logo click: reset all controls to defaults ----------
+    function resetToDefaults(){
+      const marketSelect = document.getElementById("marketSelect");
+      const filterMode = document.getElementById("filterMode");
+      const sortKey = document.getElementById("sortKey");
+      const searchBox = document.getElementById("searchBox");
+
+      if (searchBox) searchBox.value = "";
+
+      if (marketSelect) marketSelect.value = "twse";
+      if (filterMode) filterMode.value = "all";
+      if (sortKey) sortKey.value = "chg_pct";
+
+      // Sort direction default: descending
+      sortAsc = false;
+      const label = document.getElementById("sortDirLabel");
+      if (label){
+        label.textContent = "⇣";
+        label.className = "sort-anim sort-down";
+        label.style.setProperty("--rot", "0deg");
+      }
+
+      // 手機：預設回到卡片模式（若存在該功能）
+      if (typeof setMobileViewMode === "function"){
+        const isPhone = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+        if (isPhone) setMobileViewMode("cards");
+      }
+
+      loadData("twse");
+    }
+
+// ---------- helpers ----------
     function toNum(v){
       if (v === null || v === undefined || v === "") return NaN;
       const n = Number(v);
@@ -754,7 +836,10 @@
         summaryText.textContent =
           `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})`;
 
-        // 預設篩選：顯示全部
+        
+
+        applyHeaderHeight();
+// 預設篩選：顯示全部
         currentFilterMode = "all";
         document.getElementById("filterMode").value = "all";
 
@@ -1318,6 +1403,13 @@ document.getElementById("searchBox").addEventListener("input", applySearchFilter
     }
 
     initMobileViewToggle();
+    // 綁定 Logo 點擊：恢復預設
+    const logo = document.getElementById("logoBtn");
+    if (logo){
+      logo.addEventListener("click", resetToDefaults);
+    }
+
+    applyHeaderHeight();
     loadData("twse");
   </script>
 
