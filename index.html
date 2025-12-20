@@ -78,6 +78,22 @@
       gap:4px;
     }
     #sortDirBtn:hover{ background:#1f2937; }
+
+    /* 手機端：顯示模式切換（卡片 / 表格） */
+    .view-toggle{
+      padding:7px 12px;
+      border-radius:999px;
+      border:1px solid #4b5563;
+      background:#111827;
+      color:#e5e7eb;
+      cursor:pointer;
+      display:none; /* 預設不顯示（桌機/平板） */
+      align-items:center;
+      gap:6px;
+      font-weight:900;
+    }
+    .view-toggle:hover{ background:#1f2937; }
+
     .summary{ font-size:12px; color:#9ca3af; }
 
     /* 右上角：加權指數區塊 */
@@ -508,10 +524,17 @@
       text-shadow:0 0 8px rgba(147,197,253,.8);
     }
 
-    /* Phone：顯示卡片、隱藏表格 */
+    /* Phone：預設卡片，可切換表格（左右滑） */
     @media (max-width: 720px){
-      .table-wrap{ display:none; }
-      .cards{ display:flex; flex-direction:column; gap:12px; }
+      /* 顯示切換鈕 */
+      .view-toggle{ display:inline-flex; }
+
+      /* 兩種模式（預設：mobile-view-cards） */
+      body.mobile-view-cards .table-wrap{ display:none; }
+      body.mobile-view-cards .cards{ display:flex; flex-direction:column; gap:12px; }
+
+      body.mobile-view-table .table-wrap{ display:block; }
+      body.mobile-view-table .cards{ display:none; }
     }
 
   </style>
@@ -555,6 +578,8 @@
 
     <button id="sortDirBtn">排序方向：<span id="sortDirLabel">降冪 ⬇</span></button>
     <div class="summary"><span id="countInfo"></span></div>
+    <button id="viewToggleBtn" class="view-toggle" type="button" title="手機端切換：卡片/表格">顯示：<span id="viewToggleLabel">卡片</span> 🔁</button>
+
   
 
     <div id="taiexBox" class="taiex-box" aria-label="加權指數">
@@ -1141,9 +1166,13 @@
         if (show) visibleCards++;
       });
 
-      // 顯示數量：桌機用表格、手機用卡片（也避免兩邊同時統計）
+      // 顯示數量：桌機用表格；手機依「顯示模式」決定用卡片或表格
       const isPhone = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
-      const visible = isPhone ? visibleCards : visibleTable;
+      let visible = visibleTable;
+      if (isPhone) {
+        const useTable = document.body.classList.contains("mobile-view-table");
+        visible = useTable ? visibleTable : visibleCards;
+      }
 
       document.getElementById("countInfo").textContent = `目前顯示：${visible} 檔`;
     }
@@ -1173,6 +1202,53 @@
       renderSorted();
     });
 
+
+    function updateViewToggleLabel(){
+      const labelEl = document.getElementById("viewToggleLabel");
+      if (!labelEl) return;
+      const useTable = document.body.classList.contains("mobile-view-table");
+      labelEl.textContent = useTable ? "表格" : "卡片";
+    }
+
+    function initMobileViewToggle(){
+      const isPhone = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+      const btn = document.getElementById("viewToggleBtn");
+      if (!btn) return;
+
+      // 桌機/平板：不需要切換（CSS 也會隱藏按鈕）
+      if (!isPhone){
+        document.body.classList.remove("mobile-view-cards","mobile-view-table");
+        return;
+      }
+
+      // 手機：預設卡片；若有記錄則沿用
+      const saved = (localStorage.getItem("mobileViewMode") || "").toLowerCase();
+      if (saved === "table"){
+        document.body.classList.add("mobile-view-table");
+        document.body.classList.remove("mobile-view-cards");
+      } else {
+        document.body.classList.add("mobile-view-cards");
+        document.body.classList.remove("mobile-view-table");
+      }
+      updateViewToggleLabel();
+
+      btn.addEventListener("click", () => {
+        const useTable = document.body.classList.contains("mobile-view-table");
+        if (useTable){
+          document.body.classList.remove("mobile-view-table");
+          document.body.classList.add("mobile-view-cards");
+          localStorage.setItem("mobileViewMode", "cards");
+        } else {
+          document.body.classList.add("mobile-view-table");
+          document.body.classList.remove("mobile-view-cards");
+          localStorage.setItem("mobileViewMode", "table");
+        }
+        updateViewToggleLabel();
+        applySearchFilter(); // 讓「目前顯示」依模式更新
+      });
+    }
+
+    initMobileViewToggle();
     loadData("twse");
   </script>
 </body>
