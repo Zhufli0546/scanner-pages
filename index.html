@@ -79,79 +79,60 @@
     }
     #sortDirBtn:hover{ background:#1f2937; }
 
-    
-/* 手機端：顯示模式切換（卡片 / 表格）- iOS Segmented */
-.segmented{
-  display:none; /* 桌機/平板預設不顯示 */
-  padding:2px;
-  border-radius:999px;
-  border:1px solid rgba(148,163,184,.28);
-  background: rgba(255,255,255,.06);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow:
-    0 10px 28px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.08);
-  overflow:hidden;
-  gap:2px;
-  user-select:none;
-}
-.seg-btn{
-  appearance:none;
-  border:0;
-  padding:7px 14px;
-  border-radius:999px;
-  background: transparent;
-  color:#e5e7eb;
-  cursor:pointer;
-  font-weight:950;
-  letter-spacing:.2px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-width:84px;
-  transition:
-    background .18s ease,
-    color .18s ease,
-    transform .06s ease,
-    box-shadow .18s ease,
-    filter .18s ease;
-  -webkit-tap-highlight-color: transparent;
+    /* ===== Sort direction icon (方案 C + 動畫) ===== */
+.sort-anim{
+  display:inline-block;
+  --rot: 0deg;
+  --lift: 0px;
+  transform: translateY(var(--lift)) rotate(var(--rot));
+  transition: transform .28s cubic-bezier(.34,1.56,.64,1), text-shadow .18s ease, color .18s ease;
   will-change: transform;
 }
-.seg-btn .seg-ico{
-  font-size:13px;
-  margin-right:6px;
-  opacity:.95;
-  transform: translateY(-.5px);
+.sort-up{
+  --lift: -2px; /* 升冪：微浮起 */
+  color:#22c55e;
+  font-weight:1000;
+  text-shadow:0 0 8px rgba(34,197,94,.65);
 }
-.seg-btn:hover{
-  background: rgba(255,255,255,.06);
+.sort-down{
+  --lift: 2px; /* 降冪：微下沉 */
+  color:#ef4444;
+  font-weight:1000;
+  text-shadow:0 0 8px rgba(239,68,68,.65);
 }
-.seg-btn:active{
-  transform: scale(.985);
-  filter: brightness(1.05);
-}
-.seg-btn:focus-visible{
-  outline: 2px solid rgba(96,165,250,.65);
-  outline-offset: 2px;
-}
-.seg-btn.active{
-  background: rgba(255,255,255,.88);
-  color:#0b1220;
-  box-shadow:
-    0 1px 2px rgba(0,0,0,.35),
-    0 10px 22px rgba(0,0,0,.25),
-    inset 0 1px 0 rgba(255,255,255,.65),
-    inset 0 -1px 0 rgba(0,0,0,.10);
-}
-.seg-btn.active:active{
-  transform: scale(.985);
-  box-shadow:
-    0 1px 2px rgba(0,0,0,.30),
-    0 8px 18px rgba(0,0,0,.22),
-    inset 0 2px 6px rgba(0,0,0,.08);
-}
+
+/* 手機端：顯示模式切換（卡片 / 表格）- Segmented */
+    .segmented{
+      display:none; /* 桌機/平板預設不顯示 */
+      border:1px solid #4b5563;
+      background:#0b1220;
+      border-radius:999px;
+      overflow:hidden;
+      box-shadow:0 0 14px rgba(0,0,0,.25);
+    }
+    .seg-btn{
+      appearance:none;
+      border:0;
+      padding:7px 14px;
+      background:transparent;
+      color:#e5e7eb;
+      cursor:pointer;
+      font-weight:1000;
+      letter-spacing:.2px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:74px;
+      transition: .18s ease;
+    }
+    .seg-btn:hover{
+      background: rgba(31,41,55,.65);
+    }
+    .seg-btn.active{
+      background: linear-gradient(90deg, rgba(59,130,246,.35), rgba(59,130,246,.75), rgba(59,130,246,.35));
+      color:#0b1220;
+      text-shadow: none;
+    }
 
     .summary{ font-size:12px; color:#9ca3af; }
 
@@ -588,7 +569,7 @@
   </style>
 </head>
 
-<body class="mobile-view-cards">
+<body>
   <div class="header">
     <img class="header-logo" src="logo.png" alt="SCAN logo" />
     <div class="subtitle" id="summaryText">讀取中…</div>
@@ -624,11 +605,11 @@
       </select>
     </div>
 
-    <button id="sortDirBtn">排序方向：<span id="sortDirLabel">降冪 ⬇</span></button>
+    <button id="sortDirBtn">排序方向：<span id="sortDirLabel" class="sort-anim sort-down">⇣</span></button>
     <div class="summary"><span id="countInfo"></span></div>
     <div class="segmented" id="viewSegment" role="tablist" aria-label="手機顯示模式切換">
-      <button id="viewCardsBtn" class="seg-btn active" type="button" role="tab" aria-selected="true"><span class="seg-ico">🗂️</span><span class="seg-txt">卡片</span></button>
-      <button id="viewTableBtn" class="seg-btn" type="button" role="tab" aria-selected="false"><span class="seg-ico">▦</span><span class="seg-txt">表格</span></button>
+      <button id="viewCardsBtn" class="seg-btn" type="button" role="tab" aria-selected="true">卡片</button>
+      <button id="viewTableBtn" class="seg-btn" type="button" role="tab" aria-selected="false">表格</button>
     </div>
 
   
@@ -766,7 +747,9 @@
         // 預設排序：漲跌幅%
         document.getElementById("sortKey").value = "chg_pct";
         sortAsc = false;
-        document.getElementById("sortDirLabel").textContent = "降冪 ⬇";
+        const label = document.getElementById("sortDirLabel");
+        label.textContent = "⇣";
+        label.className = "sort-anim sort-down";
         renderSorted();
 
       } catch (e) {
@@ -1237,12 +1220,32 @@
     document.getElementById("sortKey").addEventListener("change", renderSorted);
 
     document.getElementById("sortDirBtn").addEventListener("click", () => {
-      sortAsc = !sortAsc;
-      document.getElementById("sortDirLabel").textContent = sortAsc ? "升冪 ⬆" : "降冪 ⬇";
-      renderSorted();
-    });
+  sortAsc = !sortAsc;
 
-    document.getElementById("searchBox").addEventListener("input", applySearchFilter);
+  const label = document.getElementById("sortDirLabel");
+
+  // 先更新狀態（文字 + 上下浮沉色）
+  if (sortAsc){
+    label.textContent = "⇡";
+    label.className = "sort-anim sort-up";
+  } else {
+    label.textContent = "⇣";
+    label.className = "sort-anim sort-down";
+  }
+
+  // 點擊時：微旋轉 180°（不影響 translateY）
+  label.style.setProperty("--rot", "0deg");
+  // 強制 reflow，確保每次點擊都能觸發動畫
+  void label.offsetWidth;
+  label.style.setProperty("--rot", "180deg");
+  setTimeout(() => {
+    label.style.setProperty("--rot", "0deg");
+  }, 180);
+
+  renderSorted();
+});
+
+document.getElementById("searchBox").addEventListener("input", applySearchFilter);
 
     document.getElementById("marketSelect").addEventListener("change", (e) => {
       loadData(e.target.value);
