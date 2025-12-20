@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>盤後掃描</title>
+
+  <style>
+    body {
+      background: #0d1117;
+      color: #e5e7eb;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      padding: 16px 25px;
+    }
+
+    /* Header：置中 Logo */
+    .header{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      margin-bottom:10px;
+    }
+    .header-logo{
+      width:240px;
+      max-width:70vw;
+      height:auto;
+      display:block;
+      filter: drop-shadow(0 0 18px rgba(176,0,0,.28));
+    }
+    .subtitle{
+      font-size:12px;
+      line-height:1.2;
+      color:#9ca3af;
+      text-align:center;
+      margin:0;
+      margin-top:-2px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    #marketSelect,#filterMode,#sortKey{
+      padding:7px 10px;
+      border-radius:6px;
+      border:1px solid #4b5563;
+      background:#111827;
+      color:#e5e7eb;
+      outline:none;
+    }
+    #searchBox{
+      padding:8px 12px;
+      min-width:220px;
+      border:1px solid #3b82f6;
+      border-radius:6px;
+      background:#111827;
+      color:#e5e7eb;
+      font-size:14px;
+      outline:none;
+      transition:.25s;
+    }
+    #searchBox::placeholder{ color:#6b7280; }
+    #searchBox:focus{ box-shadow:0 0 8px #3b82f6; }
+    #sortDirBtn{
+      padding:7px 12px;
+      border-radius:999px;
+      border:1px solid #4b5563;
+      background:#111827;
+      color:#e5e7eb;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+    }
+    #sortDirBtn:hover{ background:#1f2937; }
+    .summary{ font-size:12px; color:#9ca3af; }
+
+    /* 右上角：加權指數區塊 */
+    .taiex-box{
+      margin-left:auto;
+      padding:8px 12px;
+      border:1px solid rgba(148,163,184,.35);
+      background: linear-gradient(90deg, rgba(17,24,39,.55), rgba(59,130,246,.18), rgba(17,24,39,.55));
+      background-size: 220% 220%;
+      animation: mpiSweep 2.0s ease-in-out infinite;
+      border-radius:10px;
+      min-width:320px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:10px;
+      box-shadow: 0 0 18px rgba(0,0,0,.35);
+    }
+    .taiex-name{ color:#93c5fd; font-size:12px; font-weight:800; letter-spacing:.3px; }
+    .taiex-close{ color:#e5e7eb; font-size:15px; font-weight:950; }
+    .taiex-chg{ font-size:13px; font-weight:900; padding:2px 8px; border-radius:999px; }
+    .taiex-up{ color:#ef4444; background:rgba(239,68,68,.12); text-shadow:0 0 8px rgba(239,68,68,.35); }
+    .taiex-down{ color:#22c55e; background:rgba(34,197,94,.12); text-shadow:0 0 8px rgba(34,197,94,.28); }
+    .taiex-flat{ color:#9ca3af; background:rgba(156,163,175,.10); }
+    .taiex-meta{ color:#9ca3af; font-size:11px; }
+
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#111827;
+      border-radius:10px;
+      overflow:hidden;
+      box-shadow:0 0 18px rgba(0,0,0,.45);
+    }
+    th{
+      background:#1f2937;
+      padding:9px;
+      font-size:13px;
+      color:#93c5fd;
+      text-align:center;
+      border-bottom:1px solid #374151;
+      white-space:nowrap;
+    }
+    td{
+      padding:9px;
+      text-align:center;
+      border-bottom:1px solid #1f2937;
+      color:#d1d5db;
+      font-size:13px;
+      white-space:nowrap;
+    }
+    tr:hover{ background:rgba(59,130,246,.15); }
+
+    .tag{
+      background:#3b82f6;
+      padding:3px 8px;
+      color:white;
+      border-radius:6px;
+      font-weight:bold;
+      box-shadow:0 0 10px rgba(59,130,246,.65);
+    }
+
+    /* ===== MPI badge（科技感） ===== */
+    .mpi-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:34px;
+      padding:3px 10px;
+      border-radius:999px;
+      font-weight:1000;
+      letter-spacing:.6px;
+      border:1px solid rgba(148,163,184,.35);
+      background: linear-gradient(90deg, rgba(17,24,39,.55), rgba(59,130,246,.18), rgba(17,24,39,.55));
+      background-size: 220% 220%;
+      animation: mpiSweep 2.0s ease-in-out infinite;
+      box-shadow: 0 0 14px rgba(0,0,0,.35);
+    }
+    .mpi-S{ color:#ffd0d6; text-shadow:0 0 10px rgba(255,30,120,.55); border-color: rgba(255,30,120,.35); }
+    .mpi-A{ color:#ffe9c7; text-shadow:0 0 10px rgba(249,115,22,.45); border-color: rgba(249,115,22,.30); }
+    .mpi-B{ color:#d8ffe7; text-shadow:0 0 10px rgba(16,255,160,.45); border-color: rgba(16,255,160,.25); }
+    .mpi-C{ color:#dbeafe; text-shadow:0 0 10px rgba(59,130,246,.45); border-color: rgba(59,130,246,.25); }
+    .mpi-none{ color:#6b7280; }
+/* 橘色（價格/量的預設色） */
+    .value-orange{
+      color:#f97316;
+      font-weight:900;
+      text-shadow:0 0 6px rgba(249,115,22,.55);
+    }
+
+    /* 漲停：紅 / 螢光紅（覆蓋 value-orange） */
+    .value-red{
+      color:#000; /* 數字黑色 */
+      font-weight:1000;
+      letter-spacing:.2px;
+      background:
+        radial-gradient(140px 48px at 20% 10%, rgba(255,0,40,.55), rgba(0,0,0,0)),
+        linear-gradient(90deg, rgba(255,0,0,.35), rgba(255,0,0,.92), rgba(255,0,0,.35));
+      border-radius:12px;
+      padding:2px 8px;
+      box-shadow:
+        0 0 0 1px rgba(255,70,70,.30) inset,
+        0 0 18px rgba(255,0,0,.38);
+    }
+    @keyframes mpiSweep{
+      0%{background-position:0% 50%; filter:brightness(1)}
+      50%{background-position:100% 50%; filter:brightness(1.15)}
+      100%{background-position:0% 50%; filter:brightness(1)}
+    }
+
+    @keyframes neonSweep{
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+
+    @keyframes neonFlicker{
+      0%,100%{opacity:1; transform: translateY(-1px) scale(1)}
+      45%{opacity:.82; transform: translateY(-1px) scale(1.02)}
+      50%{opacity:.68; transform: translateY(-1px) scale(.98)}
+      55%{opacity:.92; transform: translateY(-1px) scale(1.03)}
+    }
+    .value-neonred{
+      /* ⚡ 閃電模式：改成紅底黑字（和紅色模式一致） */
+      color:#000;
+      font-weight:1000;
+      letter-spacing:.2px;
+      background:
+        radial-gradient(160px 52px at 25% 15%, rgba(255,0,40,.60), rgba(0,0,0,0)),
+        linear-gradient(90deg, rgba(255,0,0,.42), rgba(255,0,0,.98), rgba(255,0,0,.42));
+      border-radius:12px;
+      padding:2px 8px;
+      box-shadow:
+        0 0 0 1px rgba(255,70,70,.35) inset,
+        0 0 22px rgba(255,0,0,.55);
+    }
+
+    /* 漲停 icon（跟著紅/螢光紅） */
+    .limit-icons{
+      display:inline-flex;
+      align-items:center;
+      gap:3px;
+      margin-left:6px;
+      transform: translateY(-1px);
+      user-select:none;
+    }
+    .limit-iconss{
+      display:inline-block;
+      font-size:14px;
+      line-height:1;
+      letter-spacing:1px;
+      filter: drop-shadow(0 0 10px rgba(255,255,255,.10));
+    }
+    .limit-iconss--lightning{
+      padding:2px 8px;
+      border-radius:999px;
+      backdrop-filter: blur(6px);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+      background:
+        radial-gradient(120px 40px at 20% 10%, rgba(176,0,0,.45), rgba(0,0,0,0)),
+        linear-gradient(90deg, rgba(176,0,0,.22), rgba(122,0,0,.70), rgba(176,0,0,.22));
+      filter: drop-shadow(0 0 16px rgba(176,0,0,.55));
+      animation: neonFlicker 1.2s ease-in-out infinite;
+    }
+    /* 🔥：不需要底色，只要更紅更兇的 glow */
+    .limit-iconss--fire{
+      padding:0;
+      border-radius:0;
+      background: transparent;
+      box-shadow:none;
+      filter: drop-shadow(0 0 14px rgba(255,0,0,.55));
+      animation: fireFlicker 1.1s ease-in-out infinite;
+    }
+    @keyframes fireFlicker{
+      0%   { filter:brightness(1) saturate(1.05); }
+      50%  { filter:brightness(1.22) saturate(1.30); }
+      100% { filter:brightness(1) saturate(1.05); }
+    }
+    tr.hot-up{
+      box-shadow: inset 5px 0 0 rgba(255,30,120,.95), inset 0 0 0 1px rgba(176,0,0,.10);
+      animation: sideGlow 1.8s ease-in-out infinite;
+    }
+    tr.hot-down{
+      box-shadow: inset 5px 0 0 rgba(16,255,160,.90), inset 0 0 0 1px rgba(90,255,170,.08);
+      animation: sideGlow 1.8s ease-in-out infinite;
+    }
+
+    /* 漲跌幅：正紅、負綠；|>=7| 霓虹 */
+    .chg-up{
+      color:#ef4444; font-weight:950;
+      text-shadow:0 0 8px rgba(239,68,68,.55);
+      border-radius:10px;
+      background: radial-gradient(120% 90% at 50% 50%, rgba(239,68,68,0.16), rgba(0,0,0,0) 70%);
+    }
+    .chg-down{
+      color:#22c55e; font-weight:950;
+      text-shadow:0 0 8px rgba(34,197,94,.55);
+      border-radius:10px;
+      background: radial-gradient(120% 90% at 50% 50%, rgba(34,197,94,0.14), rgba(0,0,0,0) 70%);
+    }
+    .chg-hot-up{
+      color:#ffd0d6; font-weight:1000; letter-spacing:.4px;
+      background:linear-gradient(90deg, rgba(239,68,68,.25), rgba(255,30,120,.62), rgba(239,68,68,.25));
+      background-size:220% 220%;
+      animation:neonSweep 1.6s ease-in-out infinite;
+      border-radius:12px;
+      text-shadow:0 0 14px rgba(176,0,0,1);
+      box-shadow: inset 0 0 0 1px rgba(255,120,140,0.18), 0 0 18px rgba(176,0,0,0.12);
+    }
+    .chg-hot-down{
+      color:#d8ffe7; font-weight:1000; letter-spacing:.4px;
+      background:linear-gradient(90deg, rgba(34,197,94,.20), rgba(16,255,160,.55), rgba(34,197,94,.20));
+      background-size:220% 220%;
+      animation:neonSweep 1.6s ease-in-out infinite;
+      border-radius:12px;
+      text-shadow:0 0 14px rgba(34,197,94,1);
+      box-shadow: inset 0 0 0 1px rgba(120,255,190,0.16), 0 0 18px rgba(34,197,94,0.10);
+    }
+
+    /* 振幅：正且向上紅 / 正且向下綠 */
+    .amp-up{
+      color:#ef4444; font-weight:900;
+      text-shadow:0 0 6px rgba(239,68,68,.4);
+      border-radius:10px;
+      background: radial-gradient(130% 95% at 50% 50%, rgba(239,68,68,0.12), rgba(0,0,0,0) 72%);
+    }
+    .amp-down{
+      color:#22c55e; font-weight:900;
+      text-shadow:0 0 6px rgba(34,197,94,.4);
+      border-radius:10px;
+      background: radial-gradient(130% 95% at 50% 50%, rgba(34,197,94,0.10), rgba(0,0,0,0) 72%);
+    }
+
+    .amp-zero{
+      color:#8a8a8a;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+
+    .spark-cell{ padding:0; }
+
+    a.stockLink{ color:#60a5fa; font-weight:bold; text-decoration:none; transition:.2s; }
+    a.stockLink:hover{ color:#93c5fd; text-shadow:0 0 8px rgba(147,197,253,.8); }
+
+    /* ✅ 股價（收盤）紅/綠/灰：只改字色，不改底色；字重與 value-orange 一致（不再變細） */
+    .price-up{
+      color:#ff3b30 !important;
+      font-weight:900;
+      text-shadow:0 0 6px rgba(255,59,48,.55);
+    }
+    .price-down{
+      color:#34c759 !important;
+      font-weight:900;
+      text-shadow:0 0 6px rgba(52,199,89,.45);
+    }
+    .price-flat{
+      color:#9ca3af !important;
+      font-weight:900;
+      text-shadow:0 0 4px rgba(156,163,175,.35);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <img class="header-logo" src="logo.png" alt="SCAN logo" />
+    <div class="subtitle" id="summaryText">讀取中…</div>
+  </div>
+
+  <div class="toolbar">
+    <div>
+      <label for="marketSelect" style="font-size:12px; color:#9ca3af;">市場：</label>
+      <select id="marketSelect">
+        <option value="twse">上市 (TWSE)</option>
+        <option value="otc">上櫃 (OTC)</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="filterMode" style="font-size:12px; color:#9ca3af;">篩選模式：</label>
+      <select id="filterMode">
+        <option value="all">顯示全部</option>
+        <option value="limitup">漲停</option>
+        <option value="mpi">MPI 標的</option>
+      </select>
+    </div>
+
+    <input id="searchBox" placeholder="搜尋代號或名稱..." />
+
+    <div>
+      <label for="sortKey" style="font-size:12px; color:#9ca3af;">排序欄位：</label>
+      <select id="sortKey">
+        <option value="close">股價</option>
+        <option value="volume">成交量</option>
+        <option value="chg_pct">漲跌幅%</option>
+        <option value="amplitude_pct">振幅%</option>
+      </select>
+    </div>
+
+    <button id="sortDirBtn">排序方向：<span id="sortDirLabel">降冪 ⬇</span></button>
+    <div class="summary"><span id="countInfo"></span></div>
+  
+
+    <div id="taiexBox" class="taiex-box" aria-label="加權指數">
+      <span class="taiex-name">加權指數</span>
+      <span class="taiex-close" id="taiexClose">—</span>
+      <span class="taiex-chg taiex-flat" id="taiexChg">—</span>
+      <span class="taiex-meta" id="taiexTime"></span>
+    </div>
+
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>代號（點 → Goodinfo）</th>
+        <th>名稱（點 → 玩股）</th>
+        <th>股價</th>
+        <th>開盤</th>
+        <th>最高</th>
+        <th>最低</th>
+        <th>昨收</th>
+        <th>成交量</th>
+        <th>MPI</th>
+        <th>漲跌幅%</th>
+        <th>振幅%</th>
+        <th>小走勢</th>
+        <th>大股東持股</th>
+        <th>新聞</th>
+      </tr>
+    </thead>
+    <tbody id="resultBody">
+      <tr><td colspan="14">正在載入結果...</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    let allRows = [];
+
+    // ---------- helpers ----------
+    function toNum(v){
+      if (v === null || v === undefined || v === "") return NaN;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    function eq(a,b){
+      return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a-b) < 0.001;
+    }
+    let sortAsc = false; // 預設降冪
+    let currentMarket = "twse";
+    let currentFilterMode = "all";
+
+    const numericKeys = new Set([
+      "open","high","low","close","prev_close","volume","amplitude_pct","chg_pct"
+    ]);
+
+    let lastDateText = "—";
+    let lastMarketDisplay = "";
+    let lastMarketLabel = "";
+    let lastTaiex = null;
+
+    function renderTaiex(taiex){
+      const closeEl = document.getElementById('taiexClose');
+      const chgEl = document.getElementById('taiexChg');
+      const timeEl = document.getElementById('taiexTime');
+      if (!closeEl || !chgEl || !timeEl) return;
+      if (!taiex || typeof taiex !== 'object' || !isFinite(Number(taiex.close))) {
+        closeEl.textContent = '—';
+        chgEl.textContent = '—';
+        chgEl.className = 'taiex-chg taiex-flat';
+        timeEl.textContent = '';
+        return;
+      }
+      const close = Number(taiex.close);
+      const chg = isFinite(Number(taiex.chg)) ? Number(taiex.chg) : 0;
+      const chgPct = isFinite(Number(taiex.chg_pct)) ? Number(taiex.chg_pct) : null;
+      closeEl.textContent = close.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+      let chgText = (chg>=0?'+':'') + chg.toFixed(2);
+      if (chgPct !== null) chgText += ` (${(chgPct>=0?'+':'') + chgPct.toFixed(2)}%)`;
+      chgEl.textContent = chgText;
+      const cls = (chg>0) ? 'taiex-up' : (chg<0 ? 'taiex-down' : 'taiex-flat');
+      chgEl.className = 'taiex-chg ' + cls;
+      timeEl.textContent = taiex.time_text ? String(taiex.time_text) : '';
+    }
+
+    function getFilterModeLabel() {
+      return "顯示全部";
+    }
+
+    async function loadData(market) {
+      currentMarket = market;
+      const tbody = document.getElementById("resultBody");
+      const summaryText = document.getElementById("summaryText");
+      const countInfo = document.getElementById("countInfo");
+
+      tbody.innerHTML = "<tr><td colspan='14'>正在載入結果...</td></tr>";
+      countInfo.textContent = "";
+
+      const filename = market === "twse" ? "results_twse.json" : "results_otc.json";
+      const url = filename + "?v=" + new Date().getTime(); // 防快取
+
+      try {
+        const resp = await fetch(url, { cache: "no-store" });
+        if (!resp.ok) {
+          tbody.innerHTML = `<tr><td colspan='14'>找不到 ${filename}，請先用 Python 產生這個檔案。</td></tr>`;
+          summaryText.textContent = `無法讀取 ${filename}`;
+          return;
+        }
+
+        const json = await resp.json();
+        allRows = json.results || [];
+
+        lastDateText = json.date || "—";
+        lastMarketLabel = json.market || (market === "twse" ? "TWSE" : "OTC");
+        lastMarketDisplay = market === "twse" ? "上市" : "上櫃";
+
+        // 加權指數（由後端寫入 json.taiex）
+        lastTaiex = json.taiex || null;
+        renderTaiex(lastTaiex);
+
+        summaryText.textContent =
+          `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})｜全市場：${allRows.length} 檔`;
+
+        // 預設篩選：顯示全部
+        currentFilterMode = "all";
+        document.getElementById("filterMode").value = "all";
+
+        // 預設排序：漲跌幅%
+        document.getElementById("sortKey").value = "chg_pct";
+        sortAsc = false;
+        document.getElementById("sortDirLabel").textContent = "降冪 ⬇";
+        renderSorted();
+
+      } catch (e) {
+        tbody.innerHTML = "<tr><td colspan='14'>讀取結果失敗（若用 file:// 開啟，請改用 http server）。</td></tr>";
+        summaryText.textContent = `讀取 ${filename} 時發生錯誤`;
+      }
+    }
+
+    function filterRowsByMode(rows) {
+      const mode = document.getElementById("filterMode").value;
+      if (mode === "limitup") {
+        return (rows || []).filter(r => {
+          const c = toNum(r.close);
+          const u = toNum(r.limit_up ?? r.up_limit ?? r.upper_limit ?? r.limitUp ?? r.upperLimit ?? NaN);
+          return u > 0 && eq(c, u);
+        });
+      }
+      if (mode === "mpi") {
+        return (rows || []).filter(r => {
+          const v = (r.mpi ?? r.MPI ?? "").toString().trim();
+          return v === "S" || v === "A" || v === "B" || v === "C";
+        });
+      }
+      return rows;
+    }
+
+    function renderTable(rows) {
+      const tbody = document.getElementById("resultBody");
+      const countInfo = document.getElementById("countInfo");
+
+      if (!rows || !rows.length) {
+        tbody.innerHTML = "<tr><td colspan='14'>目前篩選條件下沒有股票</td></tr>";
+        countInfo.textContent = "目前顯示：0 檔";
+        return;
+      }
+
+      let html = "";
+      rows.forEach(r => {
+        const wantgoo = `https://www.wantgoo.com/stock/${r.ticker}`;
+        const goodinfo = `https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID=${r.ticker}`;
+
+        const mpiVal = (r.mpi ?? r.MPI ?? "").toString().trim();
+        const mpiText = mpiVal ? mpiVal : "—";
+
+
+        const open  = Number(r.open);
+        const high  = Number(r.high);
+        const low   = Number(r.low);
+        const close = toNum(r.close);
+        const prevClose = Number(r.prev_close ?? r.prevClose ?? r.yclose ?? r.y_close ?? 0);
+
+        // 成交量（橘色）— 後端是「股數」，前端顯示「張數」(÷1000)
+        const volNum = Number(r.volume || 0); // 股
+        const lots = volNum ? (volNum / 1000) : 0;
+        const volText = lots ? lots.toLocaleString("en-US", { maximumFractionDigits: 0 }) : "—";
+
+        // 漲跌幅（正紅負綠 + |>=7| 霓虹；=0 顯示 zero）
+        const chgPctRaw = Number((r.chg_pct ?? r.change_pct ?? r.pct ?? r.changePct ?? 0));
+        const chgPct = isFinite(chgPctRaw) ? chgPctRaw : 0;
+        const isZeroChg = (chgPct === 0);
+        const isHot = !isZeroChg && (Math.abs(chgPct) >= 7);
+        const rowClass = isHot ? (chgPct >= 0 ? "hot-up" : "hot-down") : "";
+        const chgClass = isZeroChg
+          ? "amp-zero"
+          : ((chgPct >= 0)
+              ? (isHot ? "chg-hot-up" : "chg-up")
+              : (isHot ? "chg-hot-down" : "chg-down"));
+        const chgText = isZeroChg ? "zero" : ((chgPct >= 0 ? "+" : "") + chgPct.toFixed(2) + "%");
+
+        // 振幅（正且走勢向上紅 / 向下綠）
+        const ampRaw = Number(r.amplitude_pct ?? r.amp_pct ?? r.amplitude ?? NaN);
+        const amp = Number.isFinite(ampRaw) ? ampRaw : NaN;
+        const trendUp = (close >= open);
+        let ampClass = "";
+        let ampText = "-";
+        if (Number.isFinite(amp)) {
+          if (amp === 0) {
+            ampClass = "amp-zero";
+            ampText = "zero";
+          } else {
+            ampClass = (amp > 0) ? (trendUp ? "amp-up" : "amp-down") : "";
+            ampText = amp.toFixed(2) + "%";
+          }
+        }
+
+        // ✅ 漲停價（關鍵）：如果後端沒給，這段就不觸發（不會誤判）
+        const limitUp = toNum(
+          r.limit_up ?? r.up_limit ?? r.upper_limit ?? r.limitUp ?? r.upperLimit ?? NaN
+        );
+        const isLimitClose = limitUp > 0 && eq(close, limitUp);
+
+        // ✅ 連續漲停天數（後端計算）
+        const streak = Number(r.limit_up_streak ?? r.limitUpStreak ?? 0) || 0;
+
+        // ✅ 你的規則：
+        // (3) 股價/開盤/最高/最低 全部 == 漲停價 → 螢光紅 + ⚡
+        // (4) 股價/最高 == 漲停價，但最低 != 漲停價 → 紅色 + 🔥（有打開過）
+        const neonAll = (limitUp > 0)
+          && eq(close, limitUp) && eq(open, limitUp) &&
+             eq(high, limitUp)  && eq(low,  limitUp);
+
+        const fireMode = (!neonAll)
+          && (limitUp > 0)
+          && eq(close, limitUp)
+          && eq(high,  limitUp)
+          && !eq(low,  limitUp);
+
+        const showLightning = neonAll && isLimitClose;
+        const showFire = fireMode && isLimitClose;
+
+        // ✅ 漲停 icon 序列（後端提供：保留每一天的 icon 類型）
+        const seq = Array.isArray(r.limit_up_icon_seq) ? r.limit_up_icon_seq
+                  : (Array.isArray(r.limitUpIconSeq) ? r.limitUpIconSeq : []);
+
+        let limitIconsHtml = "";
+        if (isLimitClose) {
+          if (seq && seq.length > 0) {
+            const maxIcons = 12;
+            const showSeq = seq.slice(-maxIcons); // 取最後 maxIcons 天（越靠右越新）
+            const extra = seq.length - showSeq.length;
+
+            const iconsHtml = showSeq.map(it => {
+              const icon = (it && it.icon) ? String(it.icon) : "";
+              const kind = (it && (it.kind || it.type || it.mode)) ? String(it.kind || it.type || it.mode) :
+                           (icon === "⚡" ? "lightning" : (icon === "🔥" ? "fire" : ""));
+              const dateTxt = (it && it.date) ? String(it.date) : "";
+              const title = dateTxt ? `${dateTxt}｜${kind === "lightning" ? "鎖死⚡" : (kind === "fire" ? "打開🔥" : "")}` : "";
+              const cls = (kind === "lightning") ? "limit-iconss--lightning" : ((kind === "fire") ? "limit-iconss--fire" : "");
+              return `<span class="limit-iconss ${cls}" title="${title}">${icon}</span>`;
+            }).join("");
+
+            limitIconsHtml = `<span class="limit-icons">${iconsHtml}${extra > 0 ? `<span class="limit-iconss amp-zero" title="還有 ${extra} 天">+${extra}</span>` : ""}</span>`;
+          } else {
+            // fallback：若後端沒提供序列，就用今天 icon 依 streak 重複（舊邏輯）
+            const iconChar = showLightning ? "⚡" : (showFire ? "🔥" : "");
+            const iconTitle = showLightning
+              ? "股價/開盤/最高/最低 = 漲停價（全程鎖死）"
+              : (showFire ? "股價/最高 = 漲停價，但最低曾打開" : "");
+            const iconCount = iconChar ? (streak > 0 ? streak : 1) : 0;
+
+            if (iconCount > 0) {
+              const maxIcons = 12;
+              const n = Math.min(iconCount, maxIcons);
+              limitIconsHtml = `<span class="limit-icons">`
+                + `<span class="limit-iconss ${showLightning ? "limit-iconss--lightning" : (showFire ? "limit-iconss--fire" : "")}" title="${iconTitle}">`
+                + `${iconChar.repeat(n)}${iconCount > maxIcons ? ("+" + (iconCount - maxIcons)) : ""}`
+                + `</span></span>`;
+            }
+          }
+        }
+
+        // 價格欄位 class
+        const prevCls  = "value-orange";
+        const priceCls = showLightning
+          ? "value-neonred"
+          : (showFire
+              ? "value-red"
+              : (close > open ? "price-up" : (close < open ? "price-down" : "price-flat")));
+        const openCls  = showLightning ? "value-neonred" : ((showFire && eq(open, limitUp)) ? "value-red" : "value-orange");
+        const highCls  = showLightning ? "value-neonred" : (showFire ? "value-red" : "value-orange");
+        const lowCls   = showLightning ? "value-neonred" : "value-orange";
+
+        // 小走勢：向上紅 / 向下綠
+        const prices = [open, high, low, close].filter(v => v > 0);
+        let sparkSvg = "-";
+        if (prices.length === 4) {
+          const minP = Math.min(...prices);
+          const maxP = Math.max(...prices);
+          const range = maxP - minP || 1;
+          const mapY = v => 20 - ((v - minP) / range) * 14; // 6~20
+
+          const p1 = `${5},${mapY(open)}`;
+          const p2 = `${20},${mapY(high)}`;
+          const p3 = `${40},${mapY(low)}`;
+          const p4 = `${55},${mapY(close)}`;
+
+          const color = trendUp ? "#ef4444" : "#22c55e";
+          sparkSvg = `
+            <svg width="60" height="24">
+              <polyline
+                points="${p1} ${p2} ${p3} ${p4}"
+                fill="none"
+                stroke="${color}"
+                stroke-width="2"
+                style="filter: drop-shadow(0 0 4px ${color});"
+              />
+            </svg>
+          `;
+        }
+
+        // ✅ 新聞：只用股名（不要自帶代號）
+        const qName = (r.name || "").trim();
+        const googleNews = `https://www.google.com/search?q=${encodeURIComponent(qName)}&tbm=nws&tbs=qdr:d2`;
+        const hasNews = r.has_recent_news === true;
+        const newsSample = (r.news_sample_link || "").trim();
+        let newsHtml = `<a href="${googleNews}" target="_blank" class="stockLink">Google新聞</a>`;
+        if (hasNews && newsSample) {
+          newsHtml += `&nbsp;|&nbsp;<a href="${newsSample}" target="_blank" class="stockLink">最新一則</a>`;
+        }
+
+        html += `
+          <tr class="${rowClass}">
+            <td><a class="stockLink" href="${goodinfo}" target="_blank"><span class="tag">${r.ticker}</span></a></td>
+
+            <td>
+              <a href="${wantgoo}" target="_blank" class="stockLink">
+                ${r.name || "—"}
+              </a>
+            </td>
+
+            <!-- ✅ 欄位順序：股價 → 開盤 → 最高 → 最低 → 昨收 -->
+            <td class="${priceCls}">
+              ${close ? close.toFixed(2) : "-"}
+              ${limitIconsHtml}
+            </td>
+            <td class="${openCls}">${open ? open.toFixed(2) : "-"}</td>
+            <td class="${highCls}">${high ? high.toFixed(2) : "-"}</td>
+            <td class="${lowCls}">${low ? low.toFixed(2) : "-"}</td>
+            <td class="${prevCls}">${prevClose ? prevClose.toFixed(2) : "-"}</td>
+
+            <td class="value-orange">${volText}</td>
+
+            <td>
+              <span class="mpi-badge mpi-${mpiVal || 'none'}">${mpiText}</span>
+            </td>
+
+            <td class="${chgClass}">${chgText}</td>
+            <td class="${ampClass}">${ampText}</td>
+
+            <td class="spark-cell">${sparkSvg}</td>
+            <td><a class="stockLink" href="https://norway.twsthr.info/stockholders.aspx?stock=${r.ticker}" target="_blank">查看</a></td>
+            <td>${newsHtml}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+      countInfo.textContent = `目前顯示：${rows.length} 檔`;
+    }
+
+    function renderSorted() {
+      const key = document.getElementById("sortKey").value;
+      const dir = sortAsc ? 1 : -1;
+
+      const rowsCopy = [...allRows];
+      rowsCopy.sort((a, b) => {
+        let va = a[key], vb = b[key];
+        if (va === undefined || va === null || va === "") va = numericKeys.has(key) ? 0 : "";
+        if (vb === undefined || vb === null || vb === "") vb = numericKeys.has(key) ? 0 : "";
+
+        if (numericKeys.has(key)) return dir * ((Number(va) || 0) - (Number(vb) || 0));
+        return dir * String(va).localeCompare(String(vb), "zh-Hant");
+      });
+
+      const filtered = filterRowsByMode(rowsCopy);
+      renderTable(filtered);
+      applySearchFilter();
+      updateSummaryWithFilter(filtered.length);
+    }
+
+    function applySearchFilter() {
+      const keyword = document.getElementById("searchBox").value.trim().toLowerCase();
+      const trs = document.querySelectorAll("#resultBody tr");
+      let visibleCount = 0;
+      trs.forEach(tr => {
+        const text = tr.innerText.toLowerCase();
+        const show = text.includes(keyword);
+        tr.style.display = show ? "" : "none";
+        if (show) visibleCount++;
+      });
+      document.getElementById("countInfo").textContent = `目前顯示：${visibleCount} 檔`;
+    }
+
+    function updateSummaryWithFilter(count) {
+      const summaryText = document.getElementById("summaryText");
+      summaryText.textContent =
+        `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})｜全市場：${allRows.length} 檔｜目前篩選：${getFilterModeLabel()}｜命中：${count} 檔（未計搜尋）`;
+    }
+
+    document.getElementById("sortKey").addEventListener("change", renderSorted);
+
+    document.getElementById("sortDirBtn").addEventListener("click", () => {
+      sortAsc = !sortAsc;
+      document.getElementById("sortDirLabel").textContent = sortAsc ? "升冪 ⬆" : "降冪 ⬇";
+      renderSorted();
+    });
+
+    document.getElementById("searchBox").addEventListener("input", applySearchFilter);
+
+    document.getElementById("marketSelect").addEventListener("change", (e) => {
+      loadData(e.target.value);
+    });
+
+    document.getElementById("filterMode").addEventListener("change", (e) => {
+      currentFilterMode = e.target.value;
+      renderSorted();
+    });
+
+    loadData("twse");
+  </script>
+</body>
+</html>
