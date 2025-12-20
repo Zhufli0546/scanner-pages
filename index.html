@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- PWA -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="盤後掃描">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <title>盤後掃描</title>
 
   <style>
@@ -745,7 +752,7 @@
         renderTaiex(lastTaiex);
 
         summaryText.textContent =
-          `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})｜全市場：${allRows.length} 檔`;
+          `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})`;
 
         // 預設篩選：顯示全部
         currentFilterMode = "all";
@@ -1221,7 +1228,7 @@
     function updateSummaryWithFilter(count) {
       const summaryText = document.getElementById("summaryText");
       summaryText.textContent =
-        `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})｜全市場：${allRows.length} 檔｜目前篩選：${getFilterModeLabel()}｜命中：${count} 檔（未計搜尋）`;
+        `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})｜目前篩選：${getFilterModeLabel()}｜命中：${count} 檔（未計搜尋）`;
     }
 
     document.getElementById("sortKey").addEventListener("change", renderSorted);
@@ -1313,5 +1320,15 @@ document.getElementById("searchBox").addEventListener("input", applySearchFilter
     initMobileViewToggle();
     loadData("twse");
   </script>
+
+<script>
+  // PWA: Service Worker registration (GitHub Pages friendly)
+  (function () {
+    if (!("serviceWorker" in navigator)) return;
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
+    });
+  })();
+</script>
 </body>
 </html>
