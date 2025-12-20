@@ -382,16 +382,30 @@
       50%  { filter:brightness(1.22) saturate(1.30); }
       100% { filter:brightness(1) saturate(1.05); }
     }
-    tr.hot-up{
-      box-shadow: inset 5px 0 0 rgba(255,30,120,.95), inset 0 0 0 1px rgba(176,0,0,.10);
+    /* ===== Hot rows (|chg|>=7): 左側霓虹邊條（改用第一欄 td 的 ::before，iOS/Safari 也穩定顯示） ===== */
+    tbody td:first-child{ position: relative; }
+    tbody tr td:first-child{ padding-left: 14px; } /* 預留邊條空間，避免視覺跳動 */
+    tbody tr td:first-child::before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      width:5px;
+      background: transparent;
+      border-radius: 0; /* 讓邊條直到底 */
+    }
+    tbody tr.hot-up td:first-child::before{
+      background: rgba(255,30,120,.95);
+      box-shadow: 0 0 14px rgba(255,30,120,.55);
       animation: sideGlow 1.8s ease-in-out infinite;
     }
-    tr.hot-down{
-      box-shadow: inset 5px 0 0 rgba(16,255,160,.90), inset 0 0 0 1px rgba(90,255,170,.08);
+    tbody tr.hot-down td:first-child::before{
+      background: rgba(16,255,160,.90);
+      box-shadow: 0 0 14px rgba(16,255,160,.45);
       animation: sideGlow 1.8s ease-in-out infinite;
     }
-
-    /* 漲跌幅：正紅、負綠；|>=7| 霓虹 */
+/* 漲跌幅：正紅、負綠；|>=7| 霓虹 */
     .chg-up{
       color:#ef4444; font-weight:950;
       text-shadow:0 0 8px rgba(239,68,68,.55);
@@ -757,6 +771,9 @@
 
     // ---------- Logo click: reset all controls to defaults ----------
     function resetToDefaults(){
+      // 回到頁面最上方（手機/桌機都適用）
+      try{ window.scrollTo({top:0,left:0,behavior:'instant'}); }catch(_){ window.scrollTo(0,0); }
+
       const marketSelect = document.getElementById("marketSelect");
       const filterMode = document.getElementById("filterMode");
       const sortKey = document.getElementById("sortKey");
@@ -764,7 +781,10 @@
 
       if (searchBox) searchBox.value = "";
 
-      if (marketSelect) marketSelect.value = "twse";
+      // 重置表格橫向捲動（手機表格模式常用）
+      const tw = document.querySelector('.table-wrap');
+      if (tw) { try{ tw.scrollLeft = 0; }catch(_){ } }
+if (marketSelect) marketSelect.value = "twse";
       if (filterMode) filterMode.value = "all";
       if (sortKey) sortKey.value = "chg_pct";
 
@@ -784,6 +804,9 @@
       }
 
       loadData("twse");
+
+      // 再保險一次：等 DOM 更新後回到頂部
+      setTimeout(() => { try{ window.scrollTo(0,0); }catch(_){ } }, 80);
     }
 
 // ---------- helpers ----------
