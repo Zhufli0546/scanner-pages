@@ -339,6 +339,37 @@
       position: relative;
       isolation: isolate;
     }
+
+    /* 跌停：綠（樣式/尺寸/透明度 與 漲停一致） */
+    .value-green,
+    .value-neongreen{
+      color:#22c55e; /* 鮮綠 */
+      font-weight:1000;
+      letter-spacing:.45px;
+      background:none;
+      padding:0;
+      box-shadow:none;
+      text-shadow:
+        0 0 2px rgba(34,197,94,.9),
+        0 0 6px rgba(34,197,94,.45);
+    }
+
+    td.value-green,
+    td.value-neongreen{
+      position: relative;
+      isolation: isolate;
+    }
+    td.value-green::before,
+    td.value-neongreen::before{
+      content:"";
+      position:absolute;
+      inset: 6px;
+      border-radius:10px;
+      background: linear-gradient(180deg, rgba(34,197,94,.22), rgba(34,197,94,.08));
+      pointer-events:none;
+      z-index:-1;
+    }
+
 @keyframes mpiSweep{
       0%{background-position:0% 50%; filter:brightness(1)}
       50%{background-position:100% 50%; filter:brightness(1.15)}
@@ -709,6 +740,23 @@
       .header{ padding-left: 12px; padding-right: 12px; }
     }
 
+    /* =======================
+       FIX: Mobile limit-up pill overflow when too many icons
+       - td::before 使用 inset:6px 會在左右留下空白，當 icon>2 時看起來像文字/數字超出底色
+       - 手機端把左右 inset 放寬，保留上下 6px 避免壓到分隔線
+       ======================= */
+    @media (max-width: 720px){
+      td.value-red::before,
+      td.value-neonred::before{
+        inset: 6px 2px; /* 上下 6px、左右 2px：底色更寬但不壓線 */
+      }
+      .limit-icons{
+        margin-left:4px;
+        gap:2px;
+      }
+      .limit-iconss{ font-size:13px; }
+    }
+
   </style>
 </head>
 
@@ -732,6 +780,7 @@
       <select id="filterMode">
         <option value="all">顯示全部</option>
         <option value="limitup">漲停</option>
+        <option value="limitdown">跌停</option>
         <option value="mpi">MPI 標的</option>
       </select>
     </div>
@@ -966,6 +1015,13 @@ if (marketSelect) marketSelect.value = "twse";
           return u > 0 && eq(c, u);
         });
       }
+      if (mode === "limitdown") {
+        return (rows || []).filter(r => {
+          const c = toNum(r.close);
+          const d = toNum(r.limit_down ?? r.down_limit ?? r.lower_limit ?? r.limitDown ?? r.lowerLimit ?? r.downLimit ?? NaN);
+          return d > 0 && eq(c, d);
+        });
+      }
       if (mode === "mpi") {
         return (rows || []).filter(r => {
           const v = (r.mpi ?? r.MPI ?? "").toString().trim();
@@ -994,11 +1050,11 @@ if (marketSelect) marketSelect.value = "twse";
         const mpiText = mpiVal ? mpiVal : "—";
 
 
-        const open  = Number(r.open);
-        const high  = Number(r.high);
-        const low   = Number(r.low);
+        const open  = toNum(r.open);
+        const high  = toNum(r.high);
+        const low   = toNum(r.low);
         const close = toNum(r.close);
-        const prevClose = Number(r.prev_close ?? r.prevClose ?? r.yclose ?? r.y_close ?? 0);
+const prevClose = Number(r.prev_close ?? r.prevClose ?? r.yclose ?? r.y_close ?? 0);
 
         // 成交量（橘色）— 後端是「股數」，前端顯示「張數」(÷1000)
         const volNum = Number(r.volume || 0); // 股
@@ -1021,8 +1077,8 @@ if (marketSelect) marketSelect.value = "twse";
         // 振幅（正且走勢向上紅 / 向下綠）
         const ampRaw = Number(r.amplitude_pct ?? r.amp_pct ?? r.amplitude ?? NaN);
         const amp = Number.isFinite(ampRaw) ? ampRaw : NaN;
-        const trendUp = (close >= open);
-        let ampClass = "";
+        const trendUp = (chgPct >= 0);
+let ampClass = "";
         let ampText = "-";
         if (Number.isFinite(amp)) {
           if (amp === 0) {
@@ -1039,6 +1095,13 @@ if (marketSelect) marketSelect.value = "twse";
           r.limit_up ?? r.up_limit ?? r.upper_limit ?? r.limitUp ?? r.upperLimit ?? NaN
         );
         const isLimitClose = limitUp > 0 && eq(close, limitUp);
+
+        // 跌停價（後端若提供）：支援多種欄位命名
+        const limitDown = toNum(
+          r.limit_down ?? r.down_limit ?? r.lower_limit ?? r.limitDown ?? r.lowerLimit ?? r.downLimit ?? NaN
+        );
+        const isLimitDownClose = limitDown > 0 && eq(close, limitDown);
+
 
         // ✅ 連續漲停天數（後端計算）
         const streak = Number(r.limit_up_streak ?? r.limitUpStreak ?? 0) || 0;
@@ -1058,6 +1121,21 @@ if (marketSelect) marketSelect.value = "twse";
 
         const showLightning = neonAll && isLimitClose;
         const showFire = fireMode && isLimitClose;
+
+        // 跌停判斷（對稱漲停）
+        const neonAllDown = (limitDown > 0)
+          && eq(close, limitDown) && eq(open, limitDown)
+          && eq(high,  limitDown) && eq(low,  limitDown);
+
+        const openDownMode = (!neonAllDown)
+          && (limitDown > 0)
+          && eq(close, limitDown)
+          && eq(low,  limitDown)
+          && !eq(high, limitDown);
+
+        const showNeonGreen = neonAllDown && isLimitDownClose;
+        const showGreen = openDownMode && isLimitDownClose;
+
 
         // ✅ 漲停 icon 序列（後端提供：保留每一天的 icon 類型）
         const seq = Array.isArray(r.limit_up_icon_seq) ? r.limit_up_icon_seq
@@ -1100,16 +1178,35 @@ if (marketSelect) marketSelect.value = "twse";
           }
         }
 
-        // 價格欄位 class
+        // 價格欄位 class（漲停/跌停優先）
         const prevCls  = "value-orange";
+
+        // 收盤：漲停/跌停優先，其次一般紅/綠/灰
         const priceCls = showLightning
           ? "value-neonred"
           : (showFire
               ? "value-red"
-              : (close > open ? "price-up" : (close < open ? "price-down" : "price-flat")));
-        const openCls  = showLightning ? "value-neonred" : ((showFire && eq(open, limitUp)) ? "value-red" : "value-orange");
-        const highCls  = showLightning ? "value-neonred" : (showFire ? "value-red" : "value-orange");
-        const lowCls   = showLightning ? "value-neonred" : "value-orange";
+              : (showNeonGreen
+                  ? "value-neongreen"
+                  : (showGreen
+                      ? "value-green"
+                      : (chgPct > 0 ? "price-up" : (chgPct < 0 ? "price-down" : "price-flat")))));
+
+        // 開盤/最高/最低：若等於漲停/跌停價則上色
+        const openCls  = (showLightning && eq(open, limitUp)) ? "value-neonred"
+          : ((showFire && eq(open, limitUp)) ? "value-red"
+              : ((showNeonGreen && eq(open, limitDown)) ? "value-neongreen"
+                  : ((showGreen && eq(open, limitDown)) ? "value-green" : "value-orange")));
+
+        const highCls  = (showLightning && eq(high, limitUp)) ? "value-neonred"
+          : (showFire ? (eq(high, limitUp) ? "value-red" : "value-orange")
+              : ((showNeonGreen && eq(high, limitDown)) ? "value-neongreen"
+                  : ((showGreen && eq(high, limitDown)) ? "value-green" : "value-orange")));
+
+        const lowCls   = (showLightning && eq(low, limitUp)) ? "value-neonred"
+          : (showFire ? (eq(low, limitUp) ? "value-red" : "value-orange")
+              : ((showNeonGreen && eq(low, limitDown)) ? "value-neongreen"
+                  : ((showGreen && eq(low, limitDown)) ? "value-green" : "value-orange")));
 
         // 小走勢：向上紅 / 向下綠
         const prices = [open, high, low, close].filter(v => v > 0);
@@ -1206,11 +1303,11 @@ if (marketSelect) marketSelect.value = "twse";
         const wantgoo = `https://www.wantgoo.com/stock/${r.ticker}`;
         const goodinfo = `https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID=${r.ticker}`;
 
-        const open  = Number(r.open);
-        const high  = Number(r.high);
-        const low   = Number(r.low);
+        const open  = toNum(r.open);
+        const high  = toNum(r.high);
+        const low   = toNum(r.low);
         const close = toNum(r.close);
-        const prevClose = Number(r.prev_close ?? r.prevClose ?? r.yclose ?? r.y_close ?? 0);
+const prevClose = Number(r.prev_close ?? r.prevClose ?? r.yclose ?? r.y_close ?? 0);
 
         const volNum = Number(r.volume || 0);
         const lots = volNum ? (volNum / 1000) : 0;
@@ -1232,8 +1329,8 @@ if (marketSelect) marketSelect.value = "twse";
 
         const ampRaw = Number(r.amplitude_pct ?? r.amp_pct ?? r.amplitude ?? NaN);
         const amp = Number.isFinite(ampRaw) ? ampRaw : NaN;
-        const trendUp = (close >= open);
-        let ampClass = "";
+        const trendUp = (chgPct >= 0);
+let ampClass = "";
         let ampText = "-";
         if (Number.isFinite(amp)) {
           if (amp === 0) { ampClass = "amp-zero"; ampText = "zero"; }
@@ -1242,10 +1339,18 @@ if (marketSelect) marketSelect.value = "twse";
 
         const limitUp = toNum(r.limit_up ?? r.up_limit ?? r.upper_limit ?? r.limitUp ?? r.upperLimit ?? NaN);
         const isLimitClose = limitUp > 0 && eq(close, limitUp);
+        const limitDown = toNum(r.limit_down ?? r.down_limit ?? r.lower_limit ?? r.limitDown ?? r.lowerLimit ?? r.downLimit ?? NaN);
+        const isLimitDownClose = limitDown > 0 && eq(close, limitDown);
         const neonAll = (limitUp > 0) && eq(close, limitUp) && eq(open, limitUp) && eq(high, limitUp) && eq(low, limitUp);
         const fireMode = (!neonAll) && (limitUp > 0) && eq(close, limitUp) && eq(high, limitUp) && !eq(low, limitUp);
         const showLightning = neonAll && isLimitClose;
         const showFire = fireMode && isLimitClose;
+
+        const neonAllDown = (limitDown > 0) && eq(close, limitDown) && eq(open, limitDown) && eq(high, limitDown) && eq(low, limitDown);
+        const openDownMode = (!neonAllDown) && (limitDown > 0) && eq(close, limitDown) && eq(low, limitDown) && !eq(high, limitDown);
+        const showNeonGreen = neonAllDown && isLimitDownClose;
+        const showGreen = openDownMode && isLimitDownClose;
+
 
         const seq = Array.isArray(r.limit_up_icon_seq) ? r.limit_up_icon_seq
                   : (Array.isArray(r.limitUpIconSeq) ? r.limitUpIconSeq : []);
@@ -1278,7 +1383,13 @@ if (marketSelect) marketSelect.value = "twse";
 
         const priceCls = showLightning
           ? "value-neonred"
-          : (showFire ? "value-red" : (close > open ? "price-up" : (close < open ? "price-down" : "price-flat")));
+          : (showFire
+              ? "value-red"
+              : (showNeonGreen
+                  ? "value-neongreen"
+                  : (showGreen
+                      ? "value-green"
+                      : (chgPct > 0 ? "price-up" : (chgPct < 0 ? "price-down" : "price-flat")))));
 
         const qName = (r.name || "").trim();
         const googleNews = `https://www.google.com/search?q=${encodeURIComponent(qName)}&tbm=nws&tbs=qdr:d2`;
