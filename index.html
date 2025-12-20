@@ -87,6 +87,9 @@
   transform: translateY(var(--lift)) rotate(var(--rot));
   transition: transform .28s cubic-bezier(.34,1.56,.64,1), text-shadow .18s ease, color .18s ease;
   will-change: transform;
+  font-size: 16px; /* 箭頭加大一點 */
+  line-height: 1;
+
 }
 .sort-up{
   --lift: -2px; /* 升冪：微浮起 */
@@ -434,6 +437,9 @@
         width:100%;
         min-width: 0;
         box-sizing:border-box;
+      /* 手機：排序箭頭再大一點 */
+      .sort-anim{ font-size: 18px; }
+
       }
 
       #sortDirBtn{
@@ -556,7 +562,8 @@
     /* Phone：預設卡片，可切換表格（左右滑） */
     @media (max-width: 720px){
       /* 顯示切換鈕 */
-      .segmented{ display:inline-flex; }
+      .segmented{ display:flex; width:100%; }
+      .seg-btn{ flex:1; min-width:0; }
 
       /* 兩種模式（預設：mobile-view-cards） */
       body.mobile-view-cards .table-wrap{ display:none; }
