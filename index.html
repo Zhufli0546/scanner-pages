@@ -8,9 +8,9 @@
 <meta name="theme-color" content="#0d1117">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="盤後掃描">
+<meta name="apple-mobile-web-app-title" content="Stock Scan">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
-<title>盤後掃描</title>
+<title>Stock Scan</title>
 
   <style>
     body {
@@ -1228,7 +1228,7 @@
     function updateSummaryWithFilter(count) {
       const summaryText = document.getElementById("summaryText");
       summaryText.textContent =
-        `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})｜目前篩選：${getFilterModeLabel()}｜命中：${count} 檔（未計搜尋）`;
+        `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})`;
     }
 
     document.getElementById("sortKey").addEventListener("change", renderSorted);
