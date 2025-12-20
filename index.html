@@ -295,20 +295,51 @@
     }
 
     /* 漲停：紅 / 螢光紅（覆蓋 value-orange） */
-    .value-red{
-      color:#000; /* 數字黑色 */
+        /* 漲停：紅 / 螢光紅（覆蓋 value-orange）
+       - 文字樣式留在 class 上
+       - 底色改由「td::before」繪製，避免壓到表格分隔線（跟漲跌幅底色視覺一致）
+    */
+    .value-red,
+    .value-neonred{
+      color:#ff0000; /* 非常鮮紅 */
       font-weight:1000;
-      letter-spacing:.2px;
-      background:
-        radial-gradient(140px 48px at 20% 10%, rgba(255,0,40,.55), rgba(0,0,0,0)),
-        linear-gradient(90deg, rgba(255,0,0,.35), rgba(255,0,0,.92), rgba(255,0,0,.35));
-      border-radius:12px;
-      padding:2px 8px;
-      box-shadow:
-        0 0 0 1px rgba(255,70,70,.30) inset,
-        0 0 18px rgba(255,0,0,.38);
+      letter-spacing:.45px;
+
+      /* class 本身不畫底色、不加 padding，避免撐大/壓線 */
+      background:none;
+      padding:0;
+      box-shadow:none;
+
+      text-shadow:
+        0 0 2px rgba(255,0,0,.9),
+        0 0 6px rgba(255,0,0,.45);
     }
-    @keyframes mpiSweep{
+
+    /* 價格欄位 td：用 ::before 畫底色（不碰上下/左右分隔線） */
+    td.value-red,
+    td.value-neonred{
+      position: relative;
+    }
+    td.value-red::before,
+    td.value-neonred::before{
+      content:"";
+      position:absolute;
+      inset: 6px;              /* 關鍵：縮進，避免壓到上/下橫線 */
+      border-radius:10px;      /* 跟漲跌幅一致 */
+      background: linear-gradient(180deg, rgba(255,0,0,.22), rgba(255,0,0,.08));
+      pointer-events:none;
+
+      /* ✅ 放到文字後面，避免任何瀏覽器把文字「蓋住」造成模糊 */
+      z-index: -1;
+    }
+
+    /* ✅ 讓 td 自己形成 stacking context，確保 ::before 在底層、文字在上層 */
+    td.value-red,
+    td.value-neonred{
+      position: relative;
+      isolation: isolate;
+    }
+@keyframes mpiSweep{
       0%{background-position:0% 50%; filter:brightness(1)}
       50%{background-position:100% 50%; filter:brightness(1.15)}
       100%{background-position:0% 50%; filter:brightness(1)}
@@ -326,20 +357,7 @@
       50%{opacity:.68; transform: translateY(-1px) scale(.98)}
       55%{opacity:.92; transform: translateY(-1px) scale(1.03)}
     }
-    .value-neonred{
-      /* ⚡ 閃電模式：改成紅底黑字（和紅色模式一致） */
-      color:#000;
-      font-weight:1000;
-      letter-spacing:.2px;
-      background:
-        radial-gradient(160px 52px at 25% 15%, rgba(255,0,40,.60), rgba(0,0,0,0)),
-        linear-gradient(90deg, rgba(255,0,0,.42), rgba(255,0,0,.98), rgba(255,0,0,.42));
-      border-radius:12px;
-      padding:2px 8px;
-      box-shadow:
-        0 0 0 1px rgba(255,70,70,.35) inset,
-        0 0 22px rgba(255,0,0,.55);
-    }
+    
 
     /* 漲停 icon（跟著紅/螢光紅） */
     .limit-icons{
@@ -396,14 +414,14 @@
       border-radius: 0; /* 讓邊條直到底 */
     }
     tbody tr.hot-up td:first-child::before{
-      background: rgba(255,30,120,.95);
-      box-shadow: 0 0 14px rgba(255,30,120,.55);
-      animation: sideGlow 1.8s ease-in-out infinite;
+      background: transparent;
+      box-shadow: none;
+      animation: none;
     }
     tbody tr.hot-down td:first-child::before{
-      background: rgba(16,255,160,.90);
-      box-shadow: 0 0 14px rgba(16,255,160,.45);
-      animation: sideGlow 1.8s ease-in-out infinite;
+      background: transparent;
+      box-shadow: none;
+      animation: none;
     }
 /* 漲跌幅：正紅、負綠；|>=7| 霓虹 */
     .chg-up{
@@ -436,6 +454,31 @@
       text-shadow:0 0 14px rgba(34,197,94,1);
       box-shadow: inset 0 0 0 1px rgba(120,255,190,0.16), 0 0 18px rgba(34,197,94,0.10);
     }
+
+    /* =======================
+       TUNE: 取消「漲幅>=7%」的粉紅/霓虹效果（保留一般紅/綠文字）
+       ======================= */
+    .chg-hot-up{
+      color:#ef4444 !important;
+      font-weight:950 !important;
+      letter-spacing:0 !important;
+      background: radial-gradient(120% 90% at 50% 50%, rgba(239,68,68,0.16), rgba(0,0,0,0) 70%) !important;
+      animation:none !important;
+      border-radius:10px !important;
+      text-shadow:0 0 8px rgba(239,68,68,.55) !important;
+      box-shadow:none !important;
+    }
+    .chg-hot-down{
+      color:#22c55e !important;
+      font-weight:950 !important;
+      letter-spacing:0 !important;
+      background: radial-gradient(120% 90% at 50% 50%, rgba(34,197,94,0.14), rgba(0,0,0,0) 70%) !important;
+      animation:none !important;
+      border-radius:10px !important;
+      text-shadow:0 0 8px rgba(34,197,94,.55) !important;
+      box-shadow:none !important;
+    }
+
 
     /* 振幅：正且向上紅 / 正且向下綠 */
     .amp-up{
