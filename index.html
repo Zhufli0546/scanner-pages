@@ -406,6 +406,114 @@
       .header-logo{ width: 210px; }
     }
 
+  
+    /* =======================
+       Card view (Phone)
+       ======================= */
+    .cards{
+      display:none; /* 桌機預設隱藏 */
+      width:100%;
+    }
+    .card{
+      background:#111827;
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:14px;
+      padding:12px 12px;
+      box-shadow:0 0 18px rgba(0,0,0,.35);
+    }
+    .card-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .card-title{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+    }
+    .card-name{
+      font-weight:950;
+      color:#e5e7eb;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 70vw;
+    }
+    .card-sub{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      color:#9ca3af;
+      font-size:12px;
+    }
+    .card-price{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      text-align:right;
+      margin-left:auto;
+    }
+    .card-price .p{
+      font-size:18px;
+      font-weight:1000;
+    }
+    .card-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:8px 10px;
+      margin-top:10px;
+    }
+    .kv{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding:6px 8px;
+      border-radius:12px;
+      background: rgba(31,41,55,.55);
+      border: 1px solid rgba(148,163,184,.10);
+    }
+    .kv .k{
+      color:#9ca3af;
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .kv .v{
+      color:#e5e7eb;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .card-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px solid rgba(148,163,184,.12);
+    }
+    .card-actions a{
+      font-size:12px;
+      text-decoration:none;
+      color:#60a5fa;
+      font-weight:900;
+    }
+    .card-actions a:hover{
+      color:#93c5fd;
+      text-shadow:0 0 8px rgba(147,197,253,.8);
+    }
+
+    /* Phone：顯示卡片、隱藏表格 */
+    @media (max-width: 720px){
+      .table-wrap{ display:none; }
+      .cards{ display:flex; flex-direction:column; gap:12px; }
+    }
+
   </style>
 </head>
 
@@ -457,6 +565,10 @@
     </div>
 
   </div>
+
+
+
+  <div id="cardContainer" class="cards" aria-live="polite"></div>
 
   <div class="table-wrap">
     <table>
@@ -819,6 +931,172 @@
       countInfo.textContent = `目前顯示：${rows.length} 檔`;
     }
 
+
+    function renderCards(rows){
+      const container = document.getElementById("cardContainer");
+      const countInfo = document.getElementById("countInfo");
+      if (!container) return;
+
+      if (!rows || !rows.length){
+        container.innerHTML = `<div class="card"><div style="color:#9ca3af;font-size:13px;">目前篩選條件下沒有股票</div></div>`;
+        // countInfo 由 applySearchFilter 統一處理
+        return;
+      }
+
+      let html = "";
+      rows.forEach(r => {
+        const wantgoo = `https://www.wantgoo.com/stock/${r.ticker}`;
+        const goodinfo = `https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID=${r.ticker}`;
+
+        const open  = Number(r.open);
+        const high  = Number(r.high);
+        const low   = Number(r.low);
+        const close = toNum(r.close);
+        const prevClose = Number(r.prev_close ?? r.prevClose ?? r.yclose ?? r.y_close ?? 0);
+
+        const volNum = Number(r.volume || 0);
+        const lots = volNum ? (volNum / 1000) : 0;
+        const volText = lots ? lots.toLocaleString("en-US", { maximumFractionDigits: 0 }) : "—";
+
+        const mpiVal = (r.mpi ?? r.MPI ?? "").toString().trim();
+        const mpiText = mpiVal ? mpiVal : "—";
+
+        const chgPctRaw = Number((r.chg_pct ?? r.change_pct ?? r.pct ?? r.changePct ?? 0));
+        const chgPct = isFinite(chgPctRaw) ? chgPctRaw : 0;
+        const isZeroChg = (chgPct === 0);
+        const isHot = !isZeroChg && (Math.abs(chgPct) >= 7);
+        const chgClass = isZeroChg
+          ? "amp-zero"
+          : ((chgPct >= 0)
+              ? (isHot ? "chg-hot-up" : "chg-up")
+              : (isHot ? "chg-hot-down" : "chg-down"));
+        const chgText = isZeroChg ? "zero" : ((chgPct >= 0 ? "+" : "") + chgPct.toFixed(2) + "%");
+
+        const ampRaw = Number(r.amplitude_pct ?? r.amp_pct ?? r.amplitude ?? NaN);
+        const amp = Number.isFinite(ampRaw) ? ampRaw : NaN;
+        const trendUp = (close >= open);
+        let ampClass = "";
+        let ampText = "-";
+        if (Number.isFinite(amp)) {
+          if (amp === 0) { ampClass = "amp-zero"; ampText = "zero"; }
+          else { ampClass = (amp > 0) ? (trendUp ? "amp-up" : "amp-down") : ""; ampText = amp.toFixed(2) + "%"; }
+        }
+
+        const limitUp = toNum(r.limit_up ?? r.up_limit ?? r.upper_limit ?? r.limitUp ?? r.upperLimit ?? NaN);
+        const isLimitClose = limitUp > 0 && eq(close, limitUp);
+        const neonAll = (limitUp > 0) && eq(close, limitUp) && eq(open, limitUp) && eq(high, limitUp) && eq(low, limitUp);
+        const fireMode = (!neonAll) && (limitUp > 0) && eq(close, limitUp) && eq(high, limitUp) && !eq(low, limitUp);
+        const showLightning = neonAll && isLimitClose;
+        const showFire = fireMode && isLimitClose;
+
+        const seq = Array.isArray(r.limit_up_icon_seq) ? r.limit_up_icon_seq
+                  : (Array.isArray(r.limitUpIconSeq) ? r.limitUpIconSeq : []);
+        let limitIconsHtml = "";
+        if (isLimitClose) {
+          if (seq && seq.length > 0) {
+            const maxIcons = 12;
+            const showSeq = seq.slice(-maxIcons);
+            const extra = seq.length - showSeq.length;
+            const iconsHtml = showSeq.map(it => {
+              const icon = (it && it.icon) ? String(it.icon) : "";
+              const kind = (it && (it.kind || it.type || it.mode)) ? String(it.kind || it.type || it.mode) :
+                           (icon === "⚡" ? "lightning" : (icon === "🔥" ? "fire" : ""));
+              const dateTxt = (it && it.date) ? String(it.date) : "";
+              const title = dateTxt ? `${dateTxt}｜${kind === "lightning" ? "鎖死⚡" : (kind === "fire" ? "打開🔥" : "")}` : "";
+              const cls = (kind === "lightning") ? "limit-iconss--lightning" : ((kind === "fire") ? "limit-iconss--fire" : "");
+              return `<span class="limit-iconss ${cls}" title="${title}">${icon}</span>`;
+            }).join("");
+            limitIconsHtml = `<span class="limit-icons">${iconsHtml}${extra > 0 ? `<span class="limit-iconss amp-zero" title="還有 ${extra} 天">+${extra}</span>` : ""}</span>`;
+          } else {
+            const iconChar = showLightning ? "⚡" : (showFire ? "🔥" : "");
+            const iconTitle = showLightning
+              ? "股價/開盤/最高/最低 = 漲停價（全程鎖死）"
+              : (showFire ? "股價/最高 = 漲停價，但最低曾打開" : "");
+            if (iconChar) {
+              limitIconsHtml = `<span class="limit-icons"><span class="limit-iconss ${showLightning ? "limit-iconss--lightning" : (showFire ? "limit-iconss--fire" : "")}" title="${iconTitle}">${iconChar}</span></span>`;
+            }
+          }
+        }
+
+        const priceCls = showLightning
+          ? "value-neonred"
+          : (showFire ? "value-red" : (close > open ? "price-up" : (close < open ? "price-down" : "price-flat")));
+
+        const qName = (r.name || "").trim();
+        const googleNews = `https://www.google.com/search?q=${encodeURIComponent(qName)}&tbm=nws&tbs=qdr:d2`;
+        const hasNews = r.has_recent_news === true;
+        const newsSample = (r.news_sample_link || "").trim();
+
+        const norway = `https://norway.twsthr.info/stockholders.aspx?stock=${r.ticker}`;
+
+        // 搜尋用文字（同時含代號/名稱）
+        const searchText = `${String(r.ticker||"")} ${String(r.name||"")}`.toLowerCase();
+
+        html += `
+          <div class="card" data-search="${searchText}">
+            <div class="card-top">
+              <div class="card-title">
+                <div class="card-name">
+                  <a class="stockLink" href="${wantgoo}" target="_blank">${r.name || "—"}</a>
+                </div>
+                <div class="card-sub">
+                  <a class="stockLink" href="${goodinfo}" target="_blank"><span class="tag">${r.ticker}</span></a>
+                  <span class="${chgClass}">${chgText}</span>
+                  <span class="mpi-badge mpi-${mpiVal || 'none'}">${mpiText}</span>
+                </div>
+              </div>
+
+              <div class="card-price">
+                <div class="p ${priceCls}">
+                  ${close ? close.toFixed(2) : "-"}
+                  ${limitIconsHtml}
+                </div>
+                <div class="summary">${volText} 張</div>
+              </div>
+            </div>
+
+            <div class="card-grid">
+              <div class="kv"><span class="k">開盤</span><span class="v value-orange">${open ? open.toFixed(2) : "-"}</span></div>
+              <div class="kv"><span class="k">最高</span><span class="v value-orange">${high ? high.toFixed(2) : "-"}</span></div>
+              <div class="kv"><span class="k">最低</span><span class="v value-orange">${low ? low.toFixed(2) : "-"}</span></div>
+              <div class="kv"><span class="k">昨收</span><span class="v value-orange">${prevClose ? prevClose.toFixed(2) : "-"}</span></div>
+              <div class="kv"><span class="k">振幅</span><span class="v ${ampClass}">${ampText}</span></div>
+              <div class="kv"><span class="k">走勢</span><span class="v">${(() => {
+                const prices = [open, high, low, close].filter(v => v > 0);
+                if (prices.length !== 4) return "-";
+                const minP = Math.min(...prices);
+                const maxP = Math.max(...prices);
+                const range = maxP - minP || 1;
+                const mapY = v => 20 - ((v - minP) / range) * 14;
+                const p1 = `${5},${mapY(open)}`;
+                const p2 = `${20},${mapY(high)}`;
+                const p3 = `${40},${mapY(low)}`;
+                const p4 = `${55},${mapY(close)}`;
+                const color = (close >= open) ? "#ef4444" : "#22c55e";
+                return `
+                  <svg width="60" height="24" style="vertical-align:middle;">
+                    <polyline points="${p1} ${p2} ${p3} ${p4}" fill="none" stroke="${color}" stroke-width="2"
+                      style="filter: drop-shadow(0 0 4px ${color});" />
+                  </svg>
+                `;
+              })()}</span></div>
+            </div>
+
+            <div class="card-actions">
+              <a href="${googleNews}" target="_blank">Google新聞</a>
+              ${hasNews && newsSample ? `<a href="${newsSample}" target="_blank">最新一則</a>` : ""}
+              <a href="${norway}" target="_blank">大股東</a>
+              <a href="${goodinfo}" target="_blank">Goodinfo</a>
+              <a href="${wantgoo}" target="_blank">玩股</a>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+
     function renderSorted() {
       const key = document.getElementById("sortKey").value;
       const dir = sortAsc ? 1 : -1;
@@ -835,21 +1113,39 @@
 
       const filtered = filterRowsByMode(rowsCopy);
       renderTable(filtered);
+      renderCards(filtered);
       applySearchFilter();
       updateSummaryWithFilter(filtered.length);
     }
 
     function applySearchFilter() {
       const keyword = document.getElementById("searchBox").value.trim().toLowerCase();
+
+      // Table rows
       const trs = document.querySelectorAll("#resultBody tr");
-      let visibleCount = 0;
+      let visibleTable = 0;
       trs.forEach(tr => {
         const text = tr.innerText.toLowerCase();
         const show = text.includes(keyword);
         tr.style.display = show ? "" : "none";
-        if (show) visibleCount++;
+        if (show) visibleTable++;
       });
-      document.getElementById("countInfo").textContent = `目前顯示：${visibleCount} 檔`;
+
+      // Card view
+      const cards = document.querySelectorAll("#cardContainer .card");
+      let visibleCards = 0;
+      cards.forEach(card => {
+        const text = (card.getAttribute("data-search") || card.innerText || "").toLowerCase();
+        const show = text.includes(keyword);
+        card.style.display = show ? "" : "none";
+        if (show) visibleCards++;
+      });
+
+      // 顯示數量：桌機用表格、手機用卡片（也避免兩邊同時統計）
+      const isPhone = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+      const visible = isPhone ? visibleCards : visibleTable;
+
+      document.getElementById("countInfo").textContent = `目前顯示：${visible} 檔`;
     }
 
     function updateSummaryWithFilter(count) {
