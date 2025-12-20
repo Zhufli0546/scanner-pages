@@ -204,11 +204,25 @@
     }
 
     /* =======================
-       FIX: 穩定「股票代號 / 名稱」欄寬，避免不同篩選模式因資料集合不同而自動重算欄寬
+       FIX: 穩定「股票代號 / 名稱」欄寬（僅桌機/寬螢幕）
+       - 避免不同篩選模式因資料集合不同而自動重算前兩欄寬度
+       - 手機/平板仍維持 table-layout:auto，避免 icon/內容被擠出格子
        ======================= */
-    table{ table-layout: fixed; }
-    th:nth-child(1), td:nth-child(1){ width: 110px; } /* 股票代號 */
-    th:nth-child(2), td:nth-child(2){ width: 160px; } /* 名稱 */
+    @media (min-width: 981px){
+      table{ table-layout: fixed; }
+      th:nth-child(1), td:nth-child(1){ width: 110px; } /* 股票代號 */
+      th:nth-child(2), td:nth-child(2){ width: 160px; } /* 名稱 */
+      th:nth-child(3), td:nth-child(3){ width: 170px; } /* 股價（含漲停 icon 序列） */
+    }
+    @media (max-width: 980px){
+      table{ table-layout: auto; }
+      th:nth-child(1), td:nth-child(1),
+      th:nth-child(2), td:nth-child(2),
+      th:nth-child(3), td:nth-child(3){ width: auto; }
+    }
+
+    /* 漲停 icon：永遠不換行、不要把 icon 擠出格子 */
+    .limit-icons{ flex-wrap: nowrap; white-space: nowrap; }
 
     th{
       background:#1f2937;
