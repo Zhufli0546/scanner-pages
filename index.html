@@ -23,6 +23,12 @@
       padding: 16px 25px;
     }
 
+/* iOS / Mobile: prevent unexpected zoom & text autosize */
+html, body{
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 
     /* =======================
        Sticky Logo Header
@@ -956,7 +962,7 @@
   background: rgba(17,24,39,.85);
   color:#e5e7eb;
   outline:none;
-  font-size: 14px;
+  font-size: 16px;
   transition: .18s ease;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.0);
 }
@@ -1403,6 +1409,7 @@ function _openPwModal(){
       if (!pw) { focusLater(); return; }
       // 默認記住（同裝置）
       _setSavedPw(pw);
+      try{ input.blur(); }catch(_){ }
       showLoading(true);
       backdrop.classList.remove("show");
       cleanup();
@@ -2201,7 +2208,29 @@ document.getElementById("searchBox").addEventListener("input", applySearchFilter
       logo.addEventListener("click", resetToDefaults);
     }
 
-    applyHeaderHeight();
+    // ---------- Mobile resume: show loader + refresh (avoid blank/no-effect when returning) ----------
+function _refreshCurrentMarket(){
+  const sel = document.getElementById("marketSelect");
+  const m = sel && sel.value ? sel.value : "twse";
+  return loadData(m);
+}
+
+window.addEventListener("pageshow", (e) => {
+  // iOS Safari often restores from bfcache; re-show loader and refresh quietly
+  if (e && e.persisted) {
+    showLoading(true);
+    setTimeout(() => { _refreshCurrentMarket(); }, 60);
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    showLoading(true);
+    setTimeout(() => { _refreshCurrentMarket(); }, 60);
+  }
+});
+
+applyHeaderHeight();
     loadData("twse");
   </script>
 
