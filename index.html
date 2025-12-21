@@ -773,7 +773,30 @@
       .limit-iconss{ font-size:13px; }
     }
 
-  </style>
+  
+/* ===== Mobile text center (ONLY text-align) ===== */
+@media (max-width: 720px){
+  .toolbar > div label{
+    display:block;
+    width:100%;
+    text-align:center;
+  }
+  #marketSelect,
+  #filterMode,
+  #sortKey{
+    text-align:center;
+    text-align-last:center;
+  }
+  #searchBox{
+    text-align:center;
+  }
+  .summary{
+    width:100%;
+    text-align:center;
+  }
+}
+
+</style>
 </head>
 
 <body>
