@@ -630,6 +630,18 @@
       padding:12px 12px;
       box-shadow:0 0 18px rgba(0,0,0,.35);
     }
+
+    /* Card：漲停/跌停淡色底（透透的，不搶字） */
+    .card.card-limitup{
+      background: linear-gradient(180deg, rgba(255,0,0,.12), rgba(17,24,39,0) 72%), #111827;
+      border-color: rgba(255,0,0,.18);
+      box-shadow: 0 0 18px rgba(0,0,0,.35), 0 0 14px rgba(255,0,0,.10);
+    }
+    .card.card-limitdown{
+      background: linear-gradient(180deg, rgba(34,197,94,.12), rgba(17,24,39,0) 72%), #111827;
+      border-color: rgba(34,197,94,.18);
+      box-shadow: 0 0 18px rgba(0,0,0,.35), 0 0 14px rgba(34,197,94,.10);
+    }
     .card-top{
       display:flex;
       align-items:flex-start;
@@ -909,10 +921,14 @@ if (marketSelect) marketSelect.value = "twse";
         if (isPhone) setMobileViewMode("cards");
       }
 
-      loadData("twse");
-
-      // 再保險一次：等 DOM 更新後回到頂部
-      setTimeout(() => { try{ window.scrollTo(0,0); }catch(_){ } }, 80);
+      // ✅ 方案 B：整頁重載（多數手機瀏覽器會把縮放一起重置）
+      try{
+        const base = window.location.pathname;
+        window.location.replace(base + "?r=" + Date.now());
+      }catch(_){
+        window.location.href = window.location.pathname + "?r=" + Date.now();
+      }
+      return;
     }
 
 // ---------- helpers ----------
@@ -1414,9 +1430,10 @@ let ampClass = "";
 
         // 搜尋用文字（同時含代號/名稱）
         const searchText = `${String(r.ticker||"")} ${String(r.name||"")}`.toLowerCase();
+        const cardClass = isLimitClose ? "card card-limitup" : (isLimitDownClose ? "card card-limitdown" : "card");
 
         html += `
-          <div class="card" data-search="${searchText}">
+          <div class="${cardClass}" data-search="${searchText}">
             <div class="card-top">
               <div class="card-title">
                 <div class="card-name">
