@@ -2310,9 +2310,9 @@ async function _preloadBothMarkets(password){
   showLoading(true);
   _setLoadText("<strong>Loading</strong>… 正在解鎖 / 預先解密（上市 + 上櫃）");
   try{
-    _setLoadText("<strong>Loading</strong>… 驗證中");
+    _setLoadText("<strong>Loading</strong>… 正在更新");
     await _preloadOneMarket("twse", password);
-    _setLoadText("<strong>Loading</strong>… 驗證中");
+    _setLoadText("<strong>Loading</strong>… 正在更新");
     await _preloadOneMarket("otc", password);
   }finally{
     showLoading(false);
