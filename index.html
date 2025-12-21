@@ -774,26 +774,26 @@
     }
 
   
-/* ===== Mobile text center (ONLY text-align) ===== */
+/* ===== Mobile tweaks (clean): center ONLY selected values + move search below sort direction ===== */
 @media (max-width: 720px){
-  .toolbar > div label{
-    display:block;
-    width:100%;
-    text-align:center;
-  }
+  /* 只置中「選到的值」（select 顯示文字）；label 維持原樣 */
   #marketSelect,
   #filterMode,
   #sortKey{
-    text-align:center;
-    text-align-last:center;
+    text-align: center;
+    text-align-last: center; /* Android/Chrome */
   }
-  #searchBox{
-    text-align:center;
-  }
-  .summary{
-    width:100%;
-    text-align:center;
-  }
+
+  /* 手機端重新排列 toolbar：讓搜尋框在「排序方向」下面 */
+  .toolbar{ display:flex; flex-wrap:wrap; }
+  .toolbar > :nth-child(1){ order: 1; } /* 市場 */
+  .toolbar > :nth-child(2){ order: 2; } /* 篩選模式 */
+  .toolbar > :nth-child(4){ order: 3; } /* 排序欄位 */
+  .toolbar > :nth-child(5){ order: 4; } /* 排序方向 */
+  .toolbar > :nth-child(3){ order: 5; } /* 搜尋框 */
+  .toolbar > :nth-child(6){ order: 6; } /* 目前顯示 */
+  .toolbar > :nth-child(7){ order: 7; } /* 卡片/表格切換 */
+  .toolbar > :nth-child(8){ order: 8; } /* 加權指數 */
 }
 
 </style>
