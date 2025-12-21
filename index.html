@@ -25,7 +25,7 @@
        Sticky Logo Header
        - 只固定最上層 Logo 區塊（header）
        ======================= */
-    :root{ --header-h: 0px; }
+    :root{ --header-h: 0px; --safe-top: env(safe-area-inset-top, 0px); }
 
     body{
       /* header 固定後，避免內容被蓋住（由 JS 計算 header 高度） */
@@ -38,7 +38,7 @@
       right: 0;
       z-index: 800;
       background: #0d1117;
-      padding: 10px 25px 8px;
+      padding: calc(10px + var(--safe-top)) 25px 8px;
       margin-bottom: 0;
       box-shadow: 0 8px 18px rgba(0,0,0,.28);
     }
@@ -737,7 +737,7 @@
        - 手機端 header 左右 padding 跟 body 一致
        ======================= */
     @media (max-width: 720px){
-      .header{ padding-left: 12px; padding-right: 12px; }
+      .header{ padding-left: 12px; padding-right: 12px; padding-top: calc(10px + var(--safe-top)); }
     }
 
     /* =======================
@@ -860,6 +860,20 @@
       document.documentElement.style.setProperty("--header-h", `${hh}px`);
     }
     window.addEventListener("resize", applyHeaderHeight);
+    window.addEventListener("load", applyHeaderHeight);
+    document.addEventListener("DOMContentLoaded", () => {
+      applyHeaderHeight();
+      // 內容/字體載入或摘要文字更新時，高度可能改變：用 ResizeObserver 保險
+      const header = document.querySelector(".header");
+      if (header && window.ResizeObserver){
+        const ro = new ResizeObserver(() => applyHeaderHeight());
+        ro.observe(header);
+      }
+      const logo = document.getElementById("logoBtn");
+      if (logo) logo.addEventListener("load", applyHeaderHeight);
+      requestAnimationFrame(applyHeaderHeight);
+      setTimeout(applyHeaderHeight, 60);
+    });
 
     // ---------- Logo click: reset all controls to defaults ----------
     function resetToDefaults(){
