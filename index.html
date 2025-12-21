@@ -1184,6 +1184,36 @@ html, body{
     const _encCache = { twse: null, otc: null }; // decrypted JSON per market
     const _pwStoreKey = "SCAN_PW_V1";
     const _pwDateKey  = "SCAN_PW_DATE_V1"; // (legacy, no longer used)
+
+    // --- Session cache (speed up mobile refresh/back) ---
+    // sessionStorage survives reload (same tab), but clears when tab is closed.
+    const _ssPrefix = "SCN_SS_CACHE_V1_";
+    const _ssTTLms = 15 * 60 * 1000; // 15 minutes
+    function _ssKey(market){ return _ssPrefix + (market === "otc" ? "otc" : "twse"); }
+    function _ssSave(market, json){
+      try{
+        const payload = { t: Date.now(), json };
+        sessionStorage.setItem(_ssKey(market), JSON.stringify(payload));
+      }catch(_){}
+    }
+    function _ssLoad(market){
+      try{
+        const raw = sessionStorage.getItem(_ssKey(market));
+        if (!raw) return null;
+        const payload = JSON.parse(raw);
+        if (!payload || !payload.t || !payload.json) return null;
+        if (Date.now() - payload.t > _ssTTLms) return null;
+        return payload.json;
+      }catch(_){ return null; }
+    }
+    function _ssClear(){
+      try{
+        sessionStorage.removeItem(_ssKey("twse"));
+        sessionStorage.removeItem(_ssKey("otc"));
+      }catch(_){}
+    }
+
+
 // ---------- Sticky header height ----------
     function applyHeaderHeight(){
       const header = document.querySelector(".header");
@@ -1431,6 +1461,11 @@ async function loadData(market) {
       showLoading(true);
 
 
+
+
+      // ✅ Session cache: avoid re-fetch + re-decrypt on refresh/back (esp. mobile)
+      const _ssHit = _ssLoad(market);
+      if (_ssHit) { _encCache[market] = _ssHit; }
 // 若已解密過（同一裝置當天），直接用快取，避免切換控制項又跳密碼
 if (_encCache[market]) {
   const json = _encCache[market];
@@ -1532,6 +1567,10 @@ if (_encCache[market]) {
         }
 
         allRows = json.results || [];
+
+        // cache decrypted/loaded JSON in sessionStorage to speed up refresh
+        _ssSave(market, json);
+        try{ _encCache[market] = json; }catch(_){ }
 
         lastDateText = json.date || "—";
         lastMarketLabel = json.market || (market === "twse" ? "TWSE" : "OTC");
