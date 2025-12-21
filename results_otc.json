@@ -716,8 +716,14 @@
       "prev_close": 9.08,
       "limit_up": 9.98,
       "limit_down": 8.18,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 209689,
@@ -4390,8 +4396,14 @@
       "prev_close": 62.9,
       "limit_up": 69.1,
       "limit_down": 56.7,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 4690440,
@@ -7074,8 +7086,14 @@
       "prev_close": 20.55,
       "limit_up": 22.6,
       "limit_down": 18.5,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 2753895,
@@ -9714,8 +9732,14 @@
       "prev_close": 33.55,
       "limit_up": 36.9,
       "limit_down": 30.2,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 37066500,
@@ -11826,8 +11850,14 @@
       "prev_close": 25.0,
       "limit_up": 27.5,
       "limit_down": 22.5,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 97289,
@@ -12508,8 +12538,14 @@
       "prev_close": 68.0,
       "limit_up": 74.8,
       "limit_down": 61.2,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 502986,

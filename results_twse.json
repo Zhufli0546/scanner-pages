@@ -7712,8 +7712,14 @@
       "prev_close": 23.9,
       "limit_up": 26.25,
       "limit_down": 21.55,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 17638,
@@ -8702,8 +8708,14 @@
       "prev_close": 37.8,
       "limit_up": 41.55,
       "limit_down": 34.05,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 12684109,
@@ -8834,8 +8846,14 @@
       "prev_close": 14.6,
       "limit_up": 16.05,
       "limit_down": 13.15,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 347268,
@@ -12530,8 +12548,14 @@
       "prev_close": 73.0,
       "limit_up": 80.3,
       "limit_down": 65.7,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 1024897,
@@ -16952,8 +16976,14 @@
       "prev_close": 171.0,
       "limit_up": 188.0,
       "limit_down": 154.0,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 15067878,
@@ -17524,8 +17554,19 @@
       "prev_close": 17.35,
       "limit_up": 19.05,
       "limit_down": 15.65,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-18",
+          "kind": "fire",
+          "icon": "🔥"
+        },
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 2,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 2015249,
@@ -17964,8 +18005,14 @@
       "prev_close": 62.1,
       "limit_up": 68.3,
       "limit_down": 55.9,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 3340248,
@@ -20428,8 +20475,14 @@
       "prev_close": 159.0,
       "limit_up": 174.5,
       "limit_down": 143.5,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 7053586,
@@ -20582,8 +20635,14 @@
       "prev_close": 106.0,
       "limit_up": 116.5,
       "limit_down": 95.4,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 8047833,
@@ -20824,8 +20883,14 @@
       "prev_close": 31.45,
       "limit_up": 34.55,
       "limit_down": 28.35,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 36734786,
@@ -26918,8 +26983,14 @@
       "prev_close": 46.6,
       "limit_up": 51.2,
       "limit_down": 41.95,
-      "limit_up_icon_seq": [],
-      "limit_up_streak": 0,
+      "limit_up_icon_seq": [
+        {
+          "date": "2025-12-19",
+          "kind": "fire",
+          "icon": "🔥"
+        }
+      ],
+      "limit_up_streak": 1,
       "limit_down_streak": 0,
       "limit_down_icon_seq": [],
       "volume": 37146532,
