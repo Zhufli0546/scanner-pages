@@ -23,6 +23,17 @@
       padding: 16px 25px;
     }
 
+/* =======================
+   Lock screen UX (mobile)
+   - 進站先顯示密碼視窗，不先露出空頁面
+   ======================= */
+body.locked{
+  overflow: hidden; /* 防止背景可滑動 */
+}
+body.locked #appRoot{
+  visibility: hidden;
+}
+
 /* iOS / Mobile: prevent unexpected zoom & text autosize */
 html, body{
   -webkit-text-size-adjust: 100%;
@@ -1090,7 +1101,8 @@ html, body{
 </style>
 </head>
 
-<body>
+<body class="locked">
+  <div id="appRoot" class="app-root">
   <div class="header">
     <img class="header-logo" id="logoBtn" src="logo.png" alt="SCAN logo" />
     <div class="subtitle" id="summaryText">讀取中…</div>
@@ -2245,8 +2257,105 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-applyHeaderHeight();
-    loadData("twse");
+
+/* =======================
+   Boot flow (better UX)
+   - 進站立即跳密碼
+   - 點解鎖後一次解密：上市 + 上櫃（避免切到上櫃才開始卡）
+   ======================= */
+function _setLoadText(txt){
+  const el = document.querySelector("#loadOverlay .load-text");
+  if (el) el.innerHTML = txt;
+}
+
+async function _preloadOneMarket(market, password){
+  // session cache first
+  const _ssHit = _ssLoad(market);
+  if (_ssHit) { _encCache[market] = _ssHit; return; }
+  if (_encCache[market]) return;
+
+  const jsonName = market === "twse" ? "results_twse.json" : "results_otc.json";
+  const encName  = market === "twse" ? "results_twse.enc"  : "results_otc.enc";
+
+  // Prefer enc
+  const encResp = await fetch(encName + "?v=" + Date.now(), { cache: "no-store" });
+  if (encResp.ok){
+    const ab = await encResp.arrayBuffer();
+
+    // Try decrypt; if fail => reprompt until success/cancel
+    while (true){
+      try{
+        const txt = await _decryptSCN1(ab, password);
+        const json = JSON.parse(txt);
+        _encCache[market] = json;
+        try{ _ssSave(market, json); }catch(_){}
+        return;
+      }catch(e){
+        _clearSavedPw();
+        password = await _openPwModal();
+        if (!password) throw new Error("USER_CANCEL");
+      }
+    }
+  }
+
+  // Fallback json (dev/local)
+  const resp = await fetch(jsonName + "?v=" + Date.now(), { cache: "no-store" });
+  if (!resp.ok) throw new Error("HTTP_" + resp.status);
+  const json = await resp.json();
+  _encCache[market] = json;
+  try{ _ssSave(market, json); }catch(_){}
+}
+
+async function _preloadBothMarkets(password){
+  showLoading(true);
+  _setLoadText("<strong>Loading</strong>… 正在解鎖 / 預先解密（上市 + 上櫃）");
+  try{
+    _setLoadText("<strong>Loading</strong>… 正在解密：上市 (TWSE)");
+    await _preloadOneMarket("twse", password);
+    _setLoadText("<strong>Loading</strong>… 正在解密：上櫃 (OTC)");
+    await _preloadOneMarket("otc", password);
+  }finally{
+    showLoading(false);
+  }
+}
+
+// Boot ASAP (after scripts ready)
+(async function boot(){
+  try{
+    applyHeaderHeight();
+
+    const summaryText = document.getElementById("summaryText");
+    if (summaryText) summaryText.textContent = "請輸入密碼解鎖";
+
+    // 先把背景內容藏起來（避免空頁面閃一下）
+    document.body.classList.add("locked");
+
+    // 立即跳密碼（如果已記住就略過）
+    let pw = _getSavedPw();
+    if (!pw){
+      // next frame: avoid iOS first-paint jank
+      await new Promise(r => requestAnimationFrame(() => r()));
+      pw = await _openPwModal();
+      if (!pw){
+        if (summaryText) summaryText.textContent = "尚未解鎖資料";
+        return;
+      }
+    }
+
+    // 點「解鎖」後，一次把兩份市場先解密好（後續切換就不會卡）
+    await _preloadBothMarkets(pw);
+
+    // 顯示主畫面並載入預設市場（會走 cache，超快）
+    document.body.classList.remove("locked");
+    const sel = document.getElementById("marketSelect");
+    const m = (sel && sel.value) ? sel.value : "twse";
+    await loadData(m);
+  }catch(e){
+    console.error(e);
+    document.body.classList.remove("locked");
+  }
+})();
+
   </script>
 
 <script>
@@ -2258,6 +2367,8 @@ applyHeaderHeight();
     });
   })();
 </script>
+
+</div>
 
 <!-- Password Modal -->
 <div id="pwBackdrop" class="pw-backdrop" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
