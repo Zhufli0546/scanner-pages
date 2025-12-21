@@ -1032,30 +1032,6 @@ html, body{
   box-shadow: 0 0 26px rgba(59,130,246,.20);
 }
 
-.pw-footer{
-  padding: 10px 16px 14px;
-  border-top: 1px solid rgba(148,163,184,.10);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  position: relative;
-  z-index: 1;
-}
-.pw-mini{
-  font-size: 11px;
-  color:#9ca3af;
-  line-height: 1.4;
-}
-.pw-link{
-  font-size: 11px;
-  color:#93c5fd;
-  text-decoration:none;
-  font-weight: 900;
-  cursor:pointer;
-}
-.pw-link:hover{ text-shadow:0 0 10px rgba(147,197,253,.45); }
-
 /* =======================
    Tech Loading Overlay
    ======================= */
@@ -1338,7 +1314,7 @@ if (marketSelect) marketSelect.value = "twse";
 // - File format: "SCN1" + salt(16) + iv(12) + ciphertext
 // - Cipher: AES-256-GCM, key via PBKDF2-HMAC-SHA256
 // =============================
-async function _pbkdf2Key(password, salt, iterations=200000){
+async function _pbkdf2Key(password, salt, iterations=80000){
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
   return crypto.subtle.deriveKey(
@@ -1356,7 +1332,7 @@ async function _decryptSCN1(arrayBuffer, password){
   const salt = u8.slice(4, 4+16);
   const iv   = u8.slice(4+16, 4+16+12);
   const ct   = u8.slice(4+16+12);
-  const key = await _pbkdf2Key(password, salt, 200000);
+  const key = await _pbkdf2Key(password, salt, 80000);
   const ptBuf = await crypto.subtle.decrypt({name:"AES-GCM", iv}, key, ct);
   return new TextDecoder().decode(ptBuf);
 }
@@ -2264,15 +2240,7 @@ applyHeaderHeight();
     </div>
   </div>
 </div>
-      <div class="pw-error" id="pwError"></div>
-      <div class="pw-actions">
-        <button class="pw-btn primary" id="pwOkBtn" type="button">解鎖</button>
-      </div>
-    </div>
-    <div class="pw-footer">
-      <div class="pw-mini">提示：若密碼錯誤，請重新輸入。你也可以清除「本日記住」。</div>
-    </div>
-  </div>
+</div>
 </div>
 
 <!-- Tech Loading Overlay -->
