@@ -2431,7 +2431,10 @@ async function _preloadBothMarkets(password){
 <!-- Tech Loading Overlay -->
 <div id="loadOverlay" class="load-overlay" aria-hidden="true">
   <div class="load-card">
-    <div class="load-spinner" aria-hidden="true"></div>
+    <div class="orbit-loader" aria-hidden="true">
+      <img src="icons/icon-180.png" class="orbit-logo" alt="SCAN" onerror="this.style.display='none';" />
+      <div class="orbit-ring" aria-hidden="true"></div>
+    </div>
     <div class="load-text"><strong>Loading</strong>… 正在解鎖 / 載入資料</div>
   </div>
 </div>
