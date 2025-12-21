@@ -1108,11 +1108,15 @@ html, body{
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  overflow: hidden; /* 讓 icon 真正圓形滿版 */
 }
 .orbit-logo{
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover; /* 讓圖片滿版裁切成圓 */
+  display:block;
   z-index: 2;
   box-shadow:
     0 0 18px rgba(59,130,246,.45),
@@ -1132,7 +1136,6 @@ html, body{
 @keyframes orbitSpin{
   to{ transform: rotate(360deg); }
 }
-
 </style>
 </head>
 
