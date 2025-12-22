@@ -1296,6 +1296,118 @@ html, body{
         sessionStorage.removeItem(_ssKey("otc"));
       }catch(_){}
     }
+    // --- UI state persistence (filters / sort / scroll) ---
+    // iOS/Safari 在切分頁、切 APP 回來時，可能會重整或觸發 pageshow/visibilitychange。
+    // 這裡把使用者「正在看的狀態」存到 sessionStorage，回來時自動復原。
+    const _uiStateKey = "SCN_UI_STATE_V1";
+    const _uiStateTTLms = 6 * 60 * 60 * 1000; // 6 hours
+
+    function _getUIState(){
+      try{
+        const raw = sessionStorage.getItem(_uiStateKey);
+        if (!raw) return null;
+        const st = JSON.parse(raw);
+        if (!st || !st.t) return null;
+        if (Date.now() - Number(st.t) > _uiStateTTLms) return null;
+        return st;
+      }catch(_){ return null; }
+    }
+    function _setUIState(st){
+      try{ sessionStorage.setItem(_uiStateKey, JSON.stringify(st)); }catch(_){}
+    }
+    function _clearUIState(){
+      try{ sessionStorage.removeItem(_uiStateKey); }catch(_){}
+    }
+
+    function _syncSortDirLabel(){
+      const label = document.getElementById("sortDirLabel");
+      if (!label) return;
+      if (sortAsc){
+        label.textContent = "⇡";
+        label.className = "sort-anim sort-up";
+        label.style.setProperty("--rot", "180deg");
+      }else{
+        label.textContent = "⇣";
+        label.className = "sort-anim sort-down";
+        label.style.setProperty("--rot", "0deg");
+      }
+    }
+
+    function _saveUIState(extra={}){
+      try{
+        const marketSelect = document.getElementById("marketSelect");
+        const filterMode = document.getElementById("filterMode");
+        const sortKey = document.getElementById("sortKey");
+        const searchBox = document.getElementById("searchBox");
+        const tw = document.querySelector(".table-wrap");
+
+        const st = {
+          t: Date.now(),
+          market: (marketSelect && marketSelect.value) ? marketSelect.value : (currentMarket || "twse"),
+          filterMode: (filterMode && filterMode.value) ? filterMode.value : (currentFilterMode || "all"),
+          sortKey: (sortKey && sortKey.value) ? sortKey.value : "chg_pct",
+          sortAsc: !!sortAsc,
+          search: (searchBox && typeof searchBox.value === "string") ? searchBox.value : "",
+          scrollY: window.scrollY || 0,
+          tableScrollX: (tw && tw.scrollLeft) ? tw.scrollLeft : 0,
+          mobileViewMode: (localStorage.getItem("mobileViewMode") || "").toLowerCase() || "cards",
+          ...extra
+        };
+        _setUIState(st);
+      }catch(_){}
+    }
+
+    function _applyUIState(st){
+      if (!st) return;
+      const marketSelect = document.getElementById("marketSelect");
+      const filterMode = document.getElementById("filterMode");
+      const sortKey = document.getElementById("sortKey");
+      const searchBox = document.getElementById("searchBox");
+
+      if (marketSelect && st.market) marketSelect.value = st.market;
+      if (filterMode && st.filterMode) filterMode.value = st.filterMode;
+      if (sortKey && st.sortKey) sortKey.value = st.sortKey;
+      if (searchBox && typeof st.search === "string") searchBox.value = st.search;
+
+      sortAsc = !!st.sortAsc;
+      _syncSortDirLabel();
+
+      // 手機顯示模式（卡片/表格）：沿用 localStorage 的既有設計
+      const isPhone = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+      if (isPhone && typeof setMobileViewMode === "function"){
+        const mode = (st.mobileViewMode === "table") ? "table" : "cards";
+        setMobileViewMode(mode);
+      }
+    }
+
+    // Scroll restore needs to wait after DOM render (table/cards)
+    function _restoreScroll(st){
+      if (!st) return;
+      const y = Number(st.scrollY || 0);
+      const x = Number(st.tableScrollX || 0);
+      const tw = document.querySelector(".table-wrap");
+
+      requestAnimationFrame(() => {
+        try{ if (tw) tw.scrollLeft = x; }catch(_){}
+        try{ window.scrollTo(0, y); }catch(_){}
+        // 某些手機需要再補一槍
+        setTimeout(() => {
+          try{ if (tw) tw.scrollLeft = x; }catch(_){}
+          try{ window.scrollTo(0, y); }catch(_){}
+        }, 60);
+      });
+    }
+
+    // Throttle scroll saving
+    let _scrollSaveTimer = null;
+    function _scheduleSaveScroll(){
+      if (_scrollSaveTimer) return;
+      _scrollSaveTimer = setTimeout(() => {
+        _scrollSaveTimer = null;
+        _saveUIState();
+      }, 120);
+    }
+
 
 
 // ---------- Sticky header height ----------
@@ -1333,6 +1445,10 @@ function showLoading(on){
     function resetToDefaults(){
       // 回到頁面最上方（手機/桌機都適用）
       try{ window.scrollTo({top:0,left:0,behavior:'instant'}); }catch(_){ window.scrollTo(0,0); }
+
+      // 清掉 UI state（避免重載後又被自動復原）
+      _clearUIState();
+
 
       const marketSelect = document.getElementById("marketSelect");
       const filterMode = document.getElementById("filterMode");
@@ -1563,14 +1679,11 @@ if (_encCache[market]) {
   renderTaiex(lastTaiex);
   summaryText.textContent = `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})`;
   applyHeaderHeight();
-  currentFilterMode = "all";
-  document.getElementById("filterMode").value = "all";
-  document.getElementById("sortKey").value = "chg_pct";
-  sortAsc = false;
-  const label = document.getElementById("sortDirLabel");
-  label.textContent = "⇣";
-  label.className = "sort-anim sort-down";
+  // 保留使用者目前的篩選/排序，不要每次 refresh 都重置
+  _syncSortDirLabel();
   renderSorted();
+  // 盡量回到使用者原本看的位置
+  _restoreScroll(_getUIState());
   showLoading(false);
   return;
 }
@@ -1669,17 +1782,11 @@ if (_encCache[market]) {
 
         applyHeaderHeight();
 
-        // 預設篩選：顯示全部
-        currentFilterMode = "all";
-        document.getElementById("filterMode").value = "all";
-
-        // 預設排序：漲跌幅%
-        document.getElementById("sortKey").value = "chg_pct";
-        sortAsc = false;
-        const label = document.getElementById("sortDirLabel");
-        label.textContent = "⇣";
-        label.className = "sort-anim sort-down";
+        // 保留使用者目前的篩選/排序，不要每次 refresh 都重置
+        _syncSortDirLabel();
         renderSorted();
+        // 盡量回到使用者原本看的位置
+        _restoreScroll(_getUIState());
         showLoading(false);
 
       } catch (e) {
@@ -2214,7 +2321,7 @@ let ampClass = "";
         `日期：${lastDateText}｜市場：${lastMarketDisplay} (${lastMarketLabel})`;
     }
 
-    document.getElementById("sortKey").addEventListener("change", renderSorted);
+    document.getElementById("sortKey").addEventListener("change", () => { renderSorted(); _saveUIState(); });
 
     document.getElementById("sortDirBtn").addEventListener("click", () => {
   sortAsc = !sortAsc;
@@ -2240,20 +2347,29 @@ let ampClass = "";
   }, 180);
 
   renderSorted();
+  _saveUIState();
 });
 
-document.getElementById("searchBox").addEventListener("input", applySearchFilter);
+document.getElementById("searchBox").addEventListener("input", () => { applySearchFilter(); _saveUIState(); });
 
     document.getElementById("marketSelect").addEventListener("change", (e) => {
+      _saveUIState({ market: e.target.value });
       loadData(e.target.value);
     });
 
     document.getElementById("filterMode").addEventListener("change", (e) => {
       currentFilterMode = e.target.value;
       renderSorted();
+      _saveUIState();
     });
 
 
+
+    // --- Persist scroll position (vertical + table horizontal) ---
+    window.addEventListener("scroll", _scheduleSaveScroll, { passive: true });
+    const _twEl = document.querySelector(".table-wrap");
+    if (_twEl) _twEl.addEventListener("scroll", _scheduleSaveScroll, { passive: true });
+    window.addEventListener("pagehide", () => { _saveUIState(); });
     function setMobileViewMode(mode){
       // mode: "cards" | "table"
       if (mode === "table"){
@@ -2309,8 +2425,23 @@ document.getElementById("searchBox").addEventListener("input", applySearchFilter
 
     // ---------- Mobile resume: show loader + refresh (avoid blank/no-effect when returning) ----------
 function _refreshCurrentMarket(){
+  // 回到頁面時，先把上次的 UI 狀態復原，再 refresh 資料
+  const st = _getUIState();
+    if (st) {
+      _applyUIState(st);
+    } else {
+      // 第一次進站：套用你的預設（顯示全部 + 以漲跌幅降冪）
+      const fm = document.getElementById("filterMode");
+      const sk = document.getElementById("sortKey");
+      if (fm) fm.value = "all";
+      if (sk) sk.value = "chg_pct";
+      sortAsc = false;
+      _syncSortDirLabel();
+      _saveUIState();
+    }
   const sel = document.getElementById("marketSelect");
   const m = sel && sel.value ? sel.value : "twse";
+  _saveUIState({ market: m });
   return loadData(m);
 }
 
@@ -2417,10 +2548,16 @@ async function _preloadBothMarkets(password){
     // 點「解鎖」後，一次把兩份市場先解密好（後續切換就不會卡）
     await _preloadBothMarkets(pw);
 
-    // 顯示主畫面並載入預設市場（會走 cache，超快）
+    // 顯示主畫面並載入市場（會走 cache，超快）
     document.body.classList.remove("locked");
+
+    // ✅ 先復原上次的 UI 狀態（市場/篩選/排序/搜尋）
+    const st = _getUIState();
+    if (st) _applyUIState(st);
+
     const sel = document.getElementById("marketSelect");
     const m = (sel && sel.value) ? sel.value : "twse";
+    _saveUIState({ market: m });
     await loadData(m);
   }catch(e){
     console.error(e);
